@@ -1,25 +1,17 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+declare(strict_types=1);
 
-$dbFile = __DIR__ . '/../brain.db';
-$pdo = new PDO('sqlite:' . $dbFile);
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+require_once __DIR__ . '/../lib/db.php';
+allowCors();
+$pdo = getDatabase();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt = $pdo->query('SELECT * FROM products ORDER BY id DESC');
-    echo json_encode(['success' => true, 'items' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
-    exit;
+    jsonResponse(['success' => true, 'items' => $stmt->fetchAll()]);
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = requestJson();
 $action = $input['action'] ?? 'save_product';
 
 if ($action === 'save_product') {
@@ -37,9 +29,7 @@ if ($action === 'save_product') {
         ':description' => $description,
         ':stock_quantity' => $stockQuantity
     ]);
-    echo json_encode(['success' => true]);
-    exit;
+    jsonResponse(['success' => true]);
 }
 
-http_response_code(400);
-echo json_encode(['success' => false, 'message' => 'Invalid action']);
+jsonResponse(['success' => false, 'message' => 'Invalid action'], 400);
