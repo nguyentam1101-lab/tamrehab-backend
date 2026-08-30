@@ -18,6 +18,6 @@ for page in /var/www/html/public/admin.html /var/www/html/public/thanh-toan.html
 done
 
 # Keep the legacy admin page compatible with strict_types and integer IDs.
-php -r '$path="/var/www/html/public/admin.php"; $source=file_get_contents($path); $source=str_replace("function h(?string \$value): string", "function h(mixed \$value): string", $source); $source=str_replace("return htmlspecialchars(\$value ?? ''' ''', ENT_QUOTES", "return htmlspecialchars((string) (\$value ?? ''' '''), ENT_QUOTES", $source); file_put_contents($path, $source);'
+php -r '$p="/var/www/html/public/admin.php"; $s=file_get_contents($p); $s=str_replace("function h(?string \$value): string", "function h(mixed \$value): string", $s); $q=chr(39).chr(39); $s=str_replace("return htmlspecialchars(\$value ?? ".$q.", ENT_QUOTES", "return htmlspecialchars((string) (\$value ?? ".$q."), ENT_QUOTES", $s); file_put_contents($p, $s);'
 
 exec php -S "0.0.0.0:${PORT:-10000}" -t /var/www/html/public /var/www/html/public/router.php
