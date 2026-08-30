@@ -33,10 +33,8 @@ if ($orderId === '' || !is_numeric($amount) || $content === '') {
 }
 
 try {
-    $databasePath = __DIR__ . DIRECTORY_SEPARATOR . 'brain.db';
-    $db = new PDO('sqlite:' . $databasePath);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    require_once __DIR__ . '/lib/db.php';
+    $db = getDatabase();
 
     $db->beginTransaction();
 
