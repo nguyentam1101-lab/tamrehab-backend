@@ -1,23 +1,16 @@
 FROM php:8.2-cli
 
-# Cập nhật và cài đặt SQLite và extension
-RUN apt-get update \
-    && apt-get install -y sqlite3 libsqlite3-dev \
-    && docker-php-ext-install pdo_sqlite \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libsqlite3-dev && docker-php-ext-install pdo_sqlite && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy thư mục backend vào container
-COPY backend/ /var/www/html/backend/
+WORKDIR /var/www/html
+COPY my-website/backend/ /var/www/html/public/
+COPY my-website/frontend/ /var/www/html/public/
+COPY my-website/admin.php /var/www/html/public/admin.php
+COPY my-website/thanh-toan.php /var/www/html/public/thanh-toan.php
+COPY my-website/webhook-sepay.php /var/www/html/public/webhook-sepay.php
+COPY my-website/backend/brain.db /opt/tamrehab/brain.db
+COPY start.sh /usr/local/bin/tamrehab-start.sh
 
-# Copy database vào đúng vị trí backend
-COPY brain.db /var/www/html/backend/brain.db
-
-# Đặt thư mục làm việc
-WORKDIR /var/www/html/backend/
-
-# Expose cổng 10000
+ENV DB_PATH=/var/data/brain.db
 EXPOSE 10000
-
-# Chạy PHP server với root là backend để /admin.php và /info.php hoạt động
-CMD ["php", "-S", "0.0.0.0:10000", "-t", "/var/www/html/backend/"]
+CMD ["sh", "/usr/local/bin/tamrehab-start.sh"]
