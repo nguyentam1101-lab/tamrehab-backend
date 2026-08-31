@@ -23,11 +23,11 @@ $orderId = trim((string) ($payload['order_id'] ?? $payload['reference'] ?? $payl
 $amount = $payload['amount'] ?? $payload['transferAmount'] ?? $payload['total'] ?? null;
 $content = trim((string) ($payload['content'] ?? $payload['description'] ?? $payload['message'] ?? ''));
 
-if ($orderId === '' && $content === '') {
+if ($content === '') {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Missing order_id/reference/code or content/description/message'
+        'message' => 'Missing content/description/message'
     ]);
     exit;
 }
@@ -42,13 +42,9 @@ try {
         "UPDATE orders
          SET status = 'success', paid_at = CURRENT_TIMESTAMP
          WHERE status = 'pending'
-           AND (
-             order_id = :order_id
-             OR content = :content
-           )"
+           AND order_id = :content"
     );
     $statement->execute([
-        ':order_id' => $orderId,
         ':content' => $content,
     ]);
 
@@ -62,7 +58,7 @@ try {
     http_response_code(200);
     echo json_encode([
         'success' => true,
-        'order_id' => $orderId,
+        'order_id' => $content,
         'amount' => (float) $amount,
         'content' => $content
     ]);

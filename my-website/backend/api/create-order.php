@@ -17,7 +17,7 @@ if ($hoTen === '' && $soDienThoai === '' && $moTa === '') {
 
 $orderId = 'TAM-' . date('YmdHis') . '-' . rand(100, 999);
 $amount = 2000;
-$content = 'TAM' . strtoupper(substr(str_replace([' ', '-'], '', $hoTen), 0, 8) ?: 'PAY') . '-' . substr($orderId, -4);
+$content = $orderId;
 
 try {
     $stmt = $pdo->prepare('INSERT INTO orders (order_id, customer_name, phone, amount, content, status, created_at) VALUES (:order_id, :customer_name, :phone, :amount, :content, :status, CURRENT_TIMESTAMP)');
