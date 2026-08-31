@@ -15,6 +15,11 @@ if ($path === '/api/healthz') {
     return true;
 }
 
+if ($path === '/api/order-status') {
+    require __DIR__ . '/api/order-status.php';
+    return true;
+}
+
 if ($path === '/') {
     require __DIR__ . '/index.php';
     return true;

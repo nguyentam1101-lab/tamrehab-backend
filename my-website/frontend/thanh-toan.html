@@ -12,12 +12,21 @@
     input, textarea, button { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #d3c1a3; font-size:15px; }
     textarea { min-height:110px; resize:vertical; }
     button { background:#1d2d2f; color:#fff; cursor:pointer; border:none; font-weight:700; }
+    button:disabled { background:#999; cursor:not-allowed; }
     .panel { background:#fffaf5; border:1px solid #ebdcbe; border-radius:10px; padding:18px; }
     .status { margin-top:16px; border-radius:8px; padding:12px; }
     .success { background:#eaf8ec; border:1px solid #7fbc79; }
     .error { background:#fdeceb; border:1px solid #d7726d; }
     .qr { width:100%; max-width:280px; display:block; margin-top:12px; border:4px solid #fff; border-radius:10px; }
     .muted { color:#685f59; }
+    .hidden { display:none !important; }
+    .payment-info { text-align:center; }
+    .payment-info .amount { font-size:32px; font-weight:700; color:#1d2d2f; margin:8px 0; }
+    .payment-info .content { font-size:20px; font-weight:700; color:#c0392b; letter-spacing:1px; margin:8px 0; padding:8px; background:#fff; border:1px dashed #c0392b; border-radius:6px; }
+    .payment-info .order-id { font-size:14px; color:#685f59; margin-bottom:16px; }
+    .waiting { margin-top:16px; padding:12px; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; color:#856404; }
+    .waiting .spinner { display:inline-block; width:16px; height:16px; border:2px solid #856404; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; vertical-align:middle; margin-right:8px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
     @media (max-width: 760px) { .grid { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -40,7 +49,7 @@
             <textarea id="mo_ta"></textarea>
           </div>
           <div style="margin-top:16px;">
-            <button type="submit">Tạo đơn hàng</button>
+            <button type="submit" id="submitBtn">Tạo đơn hàng</button>
           </div>
         </form>
         <div id="messageBox" class="status" style="display:none"></div>
@@ -48,21 +57,39 @@
 
       <div class="panel">
         <h2>Thông tin thanh toán</h2>
-        <p><strong>Số tiền:</strong> 2.000đ</p>
-        <div id="orderInfo" class="muted">
-          <p><strong>Nội dung chuyển khoản:</strong> <span id="contentValue">--</span></p>
+        <div id="placeholderText" class="muted">
+          <p>Vui lòng nhập thông tin và bấm "Tạo đơn hàng" để hiển thị QR code.</p>
         </div>
-        <img id="qrImage" class="qr" alt="QR SePay" style="display:none;" />
+        <div id="paymentInfo" class="payment-info hidden">
+          <p class="order-id">Mã đơn: <span id="orderId">--</span></p>
+          <p><strong>Số tiền:</strong></p>
+          <p class="amount" id="amountValue">--</p>
+          <p><strong>Nội dung chuyển khoản:</strong></p>
+          <p class="content" id="contentValue">--</p>
+          <img id="qrImage" class="qr" alt="QR SePay" />
+          <div id="waitingStatus" class="waiting">
+            <span class="spinner"></span>
+            <span>Đang chờ thanh toán...</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    const API_URL = 'https://backend-tamrehab.onrender.com';
+    const API_URL = window.location.origin;
     const form = document.getElementById('paymentForm');
+    const submitBtn = document.getElementById('submitBtn');
     const messageBox = document.getElementById('messageBox');
-    const qrcode = document.getElementById('qrImage');
+    const placeholderText = document.getElementById('placeholderText');
+    const paymentInfo = document.getElementById('paymentInfo');
+    const orderIdEl = document.getElementById('orderId');
+    const amountValue = document.getElementById('amountValue');
     const contentValue = document.getElementById('contentValue');
+    const qrImage = document.getElementById('qrImage');
+    const waitingStatus = document.getElementById('waitingStatus');
+
+    let pollInterval = null;
 
     document.getElementById('ho_ten').addEventListener('input', function () {
       const name = this.value.trim();
@@ -70,10 +97,38 @@
       moTa.value = name ? 'TEST - ' + name : '';
     });
 
+    function showMessage(text, type) {
+      messageBox.style.display = 'block';
+      messageBox.className = 'status ' + type;
+      messageBox.textContent = text;
+    }
+
+    function hideMessage() {
+      messageBox.style.display = 'none';
+    }
+
+    function startPolling(orderId) {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(API_URL + '/api/order-status?order_id=' + encodeURIComponent(orderId));
+          const data = await res.json();
+          if (data.success && data.status === 'success') {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            window.location.href = 'cam-on.html?order=' + encodeURIComponent(orderId);
+          }
+        } catch (e) {
+          // ignore poll errors, retry next interval
+        }
+      }, 3000);
+    }
+
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
-      messageBox.style.display = 'none';
-      messageBox.className = 'status';
+      hideMessage();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Đang tạo...';
 
       const payload = {
         ho_ten: document.getElementById('ho_ten').value.trim(),
@@ -93,13 +148,14 @@
           throw new Error(result.message || 'Không thể tạo đơn hàng');
         }
 
-        contentValue.textContent = result.content;
-        qrcode.src = result.qr_url;
-        qrcode.style.display = 'block';
+        form.classList.add('hidden');
+        placeholderText.classList.add('hidden');
+        paymentInfo.classList.remove('hidden');
 
-        messageBox.classList.add('success');
-        messageBox.textContent = 'Tạo đơn hàng thành công.';
-        messageBox.style.display = 'block';
+        orderIdEl.textContent = result.order_id;
+        amountValue.textContent = new Intl.NumberFormat('vi-VN').format(result.amount) + 'đ';
+        contentValue.textContent = result.content;
+        qrImage.src = result.qr_url;
 
         localStorage.setItem('latestOrder', JSON.stringify({
           order_id: result.order_id,
@@ -107,11 +163,11 @@
           content: result.content
         }));
 
-        window.location.href = 'cam-on.html?order=' + encodeURIComponent(result.order_id);
+        startPolling(result.order_id);
       } catch (error) {
-        messageBox.classList.add('error');
-        messageBox.textContent = error.message || 'Đã xảy ra lỗi.';
-        messageBox.style.display = 'block';
+        showMessage(error.message || 'Đã xảy ra lỗi.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Tạo đơn hàng';
       }
     });
   </script>
