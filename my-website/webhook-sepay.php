@@ -49,8 +49,13 @@ try {
     ]);
 
     if ($statement->rowCount() === 0) {
-        $insertStatement = $db->prepare('INSERT INTO orders (order_id, amount, content, status, paid_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)');
-        $insertStatement->execute([$orderId ?: 'WEBHOOK_' . uniqid(), (float) $amount, $content, 'success']);
+        $db->rollBack();
+        http_response_code(404);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Order not found'
+        ]);
+        exit;
     }
 
     $db->commit();
