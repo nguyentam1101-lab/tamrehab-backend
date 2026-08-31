@@ -19,15 +19,15 @@ if (!is_array($payload)) {
     exit;
 }
 
-$orderId = trim((string) ($payload['order_id'] ?? $payload['reference'] ?? $payload['code'] ?? ''));
 $amount = $payload['amount'] ?? $payload['transferAmount'] ?? $payload['total'] ?? null;
 $content = trim((string) ($payload['content'] ?? $payload['description'] ?? $payload['message'] ?? ''));
+$reference = trim((string) ($payload['reference'] ?? $payload['code'] ?? $payload['order_id'] ?? ''));
 
-if ($content === '') {
+if ($content === '' && $reference === '') {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Missing content/description/message'
+        'message' => 'Missing content/description/message or reference/code/order_id'
     ]);
     exit;
 }
@@ -38,18 +38,21 @@ try {
 
     $db->beginTransaction();
 
+    $searchTerm = $content !== '' ? $content : $reference;
+
     $statement = $db->prepare(
         "UPDATE orders
          SET status = 'success', paid_at = CURRENT_TIMESTAMP
          WHERE status = 'pending'
-           AND order_id = :content"
+           AND order_id = :search"
     );
     $statement->execute([
-        ':content' => $content,
+        ':search' => $searchTerm,
     ]);
 
     if ($statement->rowCount() === 0) {
         $db->rollBack();
+        error_log("Webhook: Order not found. Content: {$content}, Reference: {$reference}");
         http_response_code(404);
         echo json_encode([
             'success' => false,
@@ -63,9 +66,10 @@ try {
     http_response_code(200);
     echo json_encode([
         'success' => true,
-        'order_id' => $content,
+        'order_id' => $searchTerm,
         'amount' => (float) $amount,
-        'content' => $content
+        'content' => $content,
+        'message' => 'Order updated successfully'
     ]);
 } catch (Throwable $error) {
     if (isset($db) && $db->inTransaction()) {
