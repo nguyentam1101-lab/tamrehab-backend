@@ -15,7 +15,7 @@ if ($orderId === '') {
     exit;
 }
 
-require_once __DIR__ . '/lib/db.php';
+require_once __DIR__ . '/../lib/db.php';
 $db = getDatabase();
 
 $stmt = $db->prepare("UPDATE orders SET status = 'success', paid_at = CURRENT_TIMESTAMP WHERE order_id = ? AND status = 'pending'");
