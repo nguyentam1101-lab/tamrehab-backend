@@ -3,11 +3,14 @@ services:
     name: tamrehab-backend
     runtime: docker
     plan: free
+    dockerfilePath: ./Dockerfile
     autoDeploy: true
     healthCheckPath: /api/healthz
     envVars:
       - key: DB_PATH
         value: /var/data/brain.db
+      - key: PORT
+        value: 10000
 
 # Render Free instances use ephemeral storage. Use a paid persistent disk
 # for production orders, or move SQLite to a managed database before scale-up.

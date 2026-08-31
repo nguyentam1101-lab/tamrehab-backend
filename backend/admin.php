@@ -2,18 +2,26 @@
 
 declare(strict_types=1);
 
-$databasePath = __DIR__ . DIRECTORY_SEPARATOR . 'brain.db';
-if (!file_exists($databasePath)) {
-    $databasePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'brain.db';
+$databasePath = trim((string) (getenv('DB_PATH') ?: ''));
+if ($databasePath === '') {
+    $databasePath = __DIR__ . DIRECTORY_SEPARATOR . 'brain.db';
+    if (!file_exists($databasePath)) {
+        $databasePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'brain.db';
+    }
 }
-
+if (is_link($databasePath)) {
+    $resolved = readlink($databasePath);
+    if ($resolved !== false && $resolved !== '') {
+        $databasePath = $resolved;
+    }
+}
 $db = new PDO('sqlite:' . $databasePath);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-function h(?string $value): string
+function h(mixed $value): string
 {
-    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 function postString(string $key): string

@@ -2,13 +2,21 @@
 
 declare(strict_types=1);
 
-$db = new PDO('sqlite:' . __DIR__ . DIRECTORY_SEPARATOR . 'brain.db');
+$databasePath = trim((string) (getenv('DB_PATH') ?: ''));
+if ($databasePath === '') {
+    $candidate = __DIR__ . '/brain.db';
+    if (is_link($candidate)) {
+        $candidate = (string) readlink($candidate);
+    }
+    $databasePath = $candidate ?: (__DIR__ . DIRECTORY_SEPARATOR . 'brain.db');
+}
+$db = new PDO('sqlite:' . $databasePath);
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-function h(?string $value): string
+function h(mixed $value): string
 {
-    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 
 function generateOrderId(): string
