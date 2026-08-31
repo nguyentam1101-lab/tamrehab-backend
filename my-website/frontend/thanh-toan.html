@@ -155,7 +155,7 @@
         orderIdEl.textContent = result.order_id;
         amountValue.textContent = new Intl.NumberFormat('vi-VN').format(result.amount) + 'đ';
         contentValue.textContent = result.content;
-        qrImage.src = 'https://vietqr.app/img?bank=BIDV&acc=96247TGLA3&template=compact&showinfo=true&holder=NGUYEN%20NGUYEN%20TAM';
+        qrImage.src = 'https://img.vietqr.io/image/BIDV-96247TGLA3-compact2.png?amount=' + result.amount + '&addInfo=' + encodeURIComponent(result.content) + '&accountName=' + encodeURIComponent('NGUYEN NGUYEN TAM');
 
         localStorage.setItem('latestOrder', JSON.stringify({
           order_id: result.order_id,

@@ -30,7 +30,7 @@ try {
         ':status' => 'pending'
     ]);
 
-    $qrUrl = 'https://img.vietqr.io/image/970422-123456789-compact.png?amount=' . $amount . '&addInfo=' . urlencode($content) . '&accountName=' . urlencode('TAM REHAB');
+    $qrUrl = 'https://img.vietqr.io/image/BIDV-96247TGLA3-compact2.png?amount=' . $amount . '&addInfo=' . urlencode($content) . '&accountName=' . urlencode('NGUYEN NGUYEN TAM');
 
     jsonResponse([
         'success' => true,
