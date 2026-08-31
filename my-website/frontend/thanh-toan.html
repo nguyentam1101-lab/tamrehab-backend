@@ -119,7 +119,10 @@
           if (data.success && data.order && data.order.status === 'success') {
             clearInterval(pollInterval);
             pollInterval = null;
-            window.location.href = 'cam-on.html?order=' + encodeURIComponent(orderId);
+            waitingStatus.innerHTML = '<p style="font-weight:700;color:#28a745;font-size:18px;">✓ Thanh toán thành công</p><p style="font-size:14px;color:#666;">Đang chuyển hướng...</p>';
+            setTimeout(() => {
+              window.location.href = 'cam-on.html?order=' + encodeURIComponent(orderId);
+            }, 2000);
             return;
           }
         } catch (e) {
