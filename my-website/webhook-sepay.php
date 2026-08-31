@@ -15,7 +15,7 @@ $payload = json_decode($rawBody ?: '', true);
 
 if (!is_array($payload)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid JSON payload']);
+    echo json_encode(['success' => false, 'message' => 'Invalid JSON payload', 'raw' => substr($rawBody, 0, 500)]);
     exit;
 }
 
@@ -27,7 +27,8 @@ if ($content === '' && $reference === '') {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Missing content/description/message or reference/code/order_id'
+        'message' => 'Missing content/description/message or reference/code/order_id',
+        'payload_keys' => array_keys($payload)
     ]);
     exit;
 }
@@ -52,11 +53,12 @@ try {
 
     if ($statement->rowCount() === 0) {
         $db->rollBack();
-        error_log("Webhook: Order not found. Content: {$content}, Reference: {$reference}");
+        error_log("Webhook: Order not found. Search: {$searchTerm}, Content: {$content}, Reference: {$reference}, Payload: " . json_encode($payload));
         http_response_code(404);
         echo json_encode([
             'success' => false,
-            'message' => 'Order not found'
+            'message' => 'Order not found',
+            'search_term' => $searchTerm
         ]);
         exit;
     }
