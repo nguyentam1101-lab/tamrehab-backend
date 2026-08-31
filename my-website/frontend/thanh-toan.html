@@ -109,7 +109,9 @@
 
     function startPolling(orderId) {
       if (pollInterval) clearInterval(pollInterval);
+      let attempts = 0;
       pollInterval = setInterval(async () => {
+        attempts++;
         try {
           const res = await fetch(API_URL + '/api/order-status?order_id=' + encodeURIComponent(orderId));
           const data = await res.json();
@@ -120,6 +122,12 @@
           }
         } catch (e) {
           // ignore poll errors, retry next interval
+        }
+        // Stop polling after 10 minutes (200 attempts * 3s)
+        if (attempts >= 200) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+          waitingStatus.innerHTML = '<span>⏰ Hết thời gian chờ. Vui lòng liên hệ admin để xác nhận.</span>';
         }
       }, 3000);
     }

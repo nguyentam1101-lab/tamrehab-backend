@@ -23,11 +23,11 @@ $orderId = trim((string) ($payload['order_id'] ?? $payload['reference'] ?? $payl
 $amount = $payload['amount'] ?? $payload['transferAmount'] ?? $payload['total'] ?? null;
 $content = trim((string) ($payload['content'] ?? $payload['description'] ?? $payload['message'] ?? ''));
 
-if ($orderId === '' || !is_numeric($amount) || $content === '') {
+if ($orderId === '' && $content === '') {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Missing order_id, amount, or content'
+        'message' => 'Missing order_id/reference/code or content/description/message'
     ]);
     exit;
 }
@@ -41,14 +41,20 @@ try {
     $statement = $db->prepare(
         "UPDATE orders
          SET status = 'success', paid_at = CURRENT_TIMESTAMP
-         WHERE order_id = :order_id
-           AND status = 'pending'"
+         WHERE status = 'pending'
+           AND (
+             order_id = :order_id
+             OR content = :content
+           )"
     );
-    $statement->execute([':order_id' => $orderId]);
+    $statement->execute([
+        ':order_id' => $orderId,
+        ':content' => $content,
+    ]);
 
     if ($statement->rowCount() === 0) {
         $insertStatement = $db->prepare('INSERT INTO orders (order_id, amount, content, status, paid_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)');
-        $insertStatement->execute([$orderId, (float) $amount, $content, 'success']);
+        $insertStatement->execute([$orderId ?: 'WEBHOOK_' . uniqid(), (float) $amount, $content, 'success']);
     }
 
     $db->commit();
