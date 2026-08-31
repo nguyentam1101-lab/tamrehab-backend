@@ -7,6 +7,16 @@ allowCors();
 $pdo = getDatabase();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $orderId = trim((string) ($_GET['order_id'] ?? ''));
+    if ($orderId !== '') {
+        $stmt = $pdo->prepare('SELECT o.*, p.name AS product_name FROM orders o LEFT JOIN products p ON p.id = o.product_id WHERE o.order_id = ?');
+        $stmt->execute([$orderId]);
+        $order = $stmt->fetch();
+        if (!$order) {
+            jsonResponse(['success' => false, 'message' => 'Order not found'], 404);
+        }
+        jsonResponse(['success' => true, 'order' => $order]);
+    }
     $stmt = $pdo->query('SELECT o.*, p.name AS product_name FROM orders o LEFT JOIN products p ON p.id = o.product_id ORDER BY o.id DESC');
     jsonResponse(['success' => true, 'items' => $stmt->fetchAll()]);
 }

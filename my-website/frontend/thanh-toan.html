@@ -110,24 +110,29 @@
     function startPolling(orderId) {
       if (pollInterval) clearInterval(pollInterval);
       let attempts = 0;
+      const maxAttempts = 20;
       pollInterval = setInterval(async () => {
         attempts++;
         try {
-          const res = await fetch(API_URL + '/api/order-status?order_id=' + encodeURIComponent(orderId));
+          const res = await fetch(API_URL + '/api/orders.php?order_id=' + encodeURIComponent(orderId));
           const data = await res.json();
-          if (data.success && data.status === 'success') {
+          if (data.success && data.order && data.order.status === 'success') {
             clearInterval(pollInterval);
             pollInterval = null;
             window.location.href = 'cam-on.html?order=' + encodeURIComponent(orderId);
+            return;
           }
         } catch (e) {
           // ignore poll errors, retry next interval
         }
-        // Stop polling after 10 minutes (200 attempts * 3s)
-        if (attempts >= 200) {
+        if (attempts >= maxAttempts) {
           clearInterval(pollInterval);
           pollInterval = null;
-          waitingStatus.innerHTML = '<span>⏰ Hết thời gian chờ. Vui lòng liên hệ admin để xác nhận.</span>';
+          waitingStatus.innerHTML = '<p style="font-weight:700;margin-bottom:10px;">Vui lòng kiểm tra lại sau</p><p style="font-size:14px;margin-bottom:12px;">Nếu bạn đã chuyển khoản, vui lòng đợi vài phút hoặc liên hệ admin.</p><button id="retryBtn" style="background:#1d2d2f;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700;">Thử lại</button>';
+          document.getElementById('retryBtn').addEventListener('click', function () {
+            waitingStatus.innerHTML = '<span class="spinner"></span><span>Đang chờ thanh toán...</span>';
+            startPolling(orderId);
+          });
         }
       }, 3000);
     }
