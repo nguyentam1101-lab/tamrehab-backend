@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "https://tamrehab-backend.onrender.com/admin.php"
+      "destination": "/admin.html"
     },
     {
       "source": "/thanh-toan",
-      "destination": "https://tamrehab-backend.onrender.com/thanh-toan.html"
+      "destination": "/thanh-toan.html"
     },
     {
       "source": "/webhook-sepay",
