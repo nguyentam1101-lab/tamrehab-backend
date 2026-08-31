@@ -3,21 +3,115 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cảm ơn bạn</title>
+  <title>Đặt lịch thành công - T.A.M REHAB</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f4efe7; display:grid; place-items:center; min-height:100vh; margin:0; }
-    .box { max-width:760px; background:#fff; border-radius:12px; border:1px solid #e9dcc0; padding:32px; text-align:center; }
-    h1 { margin-top:0; }
-    .code { font-size:28px; font-weight:700; letter-spacing:1px; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      background: linear-gradient(135deg, #E5C483 0%, #F8F1E2 100%);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+    }
+    .box {
+      max-width: 520px;
+      width: 100%;
+      background: #FFFBF5;
+      border-radius: 20px;
+      border: 2px solid #D8B877;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(53, 41, 31, 0.15);
+    }
+    .icon {
+      width: 72px;
+      height: 72px;
+      background: #28a745;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 36px;
+      color: #fff;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 28px;
+      color: #35291F;
+      letter-spacing: 1px;
+    }
+    .message {
+      font-size: 15px;
+      color: #35291F;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .highlight {
+      font-weight: 700;
+      color: #B8863A;
+    }
+    .code-label {
+      font-size: 13px;
+      color: #6E5D4F;
+      margin-bottom: 8px;
+    }
+    .code {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #35291F;
+      background: #F8F1E2;
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: 2px dashed #D8B877;
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+    .note {
+      font-size: 13px;
+      color: #6E5D4F;
+      margin-bottom: 24px;
+    }
+    .btn-home {
+      display: inline-block;
+      padding: 14px 32px;
+      background: #35291F;
+      color: #F8F1E2;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .btn-home:hover { background: #231B14; }
+    .footer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: #6E5D4F;
+    }
+    @media (max-width: 480px) {
+      .box { padding: 32px 20px; }
+      h1 { font-size: 22px; }
+      .code { font-size: 20px; }
+    }
   </style>
 </head>
 <body>
   <div class="box">
-    <h1>Cảm ơn bạn đã đặt hàng</h1>
-    <p>Đơn hàng của bạn đang chờ xác nhận thanh toán.</p>
+    <div class="icon">✓</div>
+    <h1>ĐẶT LỊCH THÀNH CÔNG!</h1>
+    <div class="message">
+      <p>Chúng tôi đã nhận được yêu cầu đặt lịch của bạn.</p>
+      <p><span class="highlight">Nhân viên T.A.M REHAB sẽ xác nhận lịch hẹn qua tin nhắn Zalo trong vòng 15 phút tới.</span></p>
+    </div>
+    <div class="code-label">Mã đơn hàng của bạn:</div>
     <div class="code" id="orderCode">--</div>
-    <p>Vui lòng chuyển khoản đúng nội dung hiển thị trên màn hình trước đó.</p>
-    <a href="thanh-toan.html">Quay lại thanh toán</a>
+    <div class="note">Vui lòng kiểm tra tin nhắn Zalo để xác nhận lịch hẹn.</div>
+    <a href="https://www.tamrehab.com/" target="_blank" class="btn-home">Về trang chủ</a>
+    <div class="footer">© 2026 T.A.M REHAB - Dịch vụ giãn cơ trị liệu chuyên sâu</div>
   </div>
 
   <script>
