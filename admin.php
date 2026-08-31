@@ -163,19 +163,26 @@ if ($tab === 'orders' && $editId > 0) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin | T.A.M REHAB</title>
+    <title>Admin - T.A.M REHAB</title>
     <style>
-        :root { font-family: Arial, sans-serif; color: #29251f; background: #f4efe6; }
+        :root { font-family: 'Segoe UI', Arial, sans-serif; color: #29251f; background: #f4efe6; }
         body { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .header { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; border-bottom: 2px solid #e9dcc0; margin-bottom: 18px; }
+        .logo { width: 48px; height: 48px; background: #4a3524; color: #fff; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 16px; letter-spacing: 1px; }
+        .brand h1 { margin: 0; color: #4a3524; font-size: 22px; font-weight: 800; }
+        .brand .subtitle { margin: 2px 0 0; color: #756a5d; font-size: 13px; }
         h1 { margin: 0 0 18px; }
         nav { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
         nav a, button { border: 1px solid #9d7b49; background: #fffaf2; color: inherit; padding: 9px 13px; border-radius: 5px; text-decoration: none; cursor: pointer; }
-        nav a.active, button.primary { background: #4a3524; color: white; }
+        nav a.active, button.primary { background: #4c8b45; color: white; border-color: #4c8b45; }
+        nav a:hover { background: #f0e4cc; }
+        nav a.active:hover { background: #3d7238; }
         .notice { padding: 10px 12px; margin: 10px 0; background: #e2f1df; border-left: 4px solid #4c8b45; }
         .error { background: #fae2df; border-color: #ae4035; }
         .layout { display: grid; grid-template-columns: minmax(260px, 330px) 1fr; gap: 20px; align-items: start; }
         form, table { background: #fffdf9; border: 1px solid #dbcdb9; border-radius: 6px; }
         form { padding: 16px; }
+        form h2 { margin: 0 0 10px; color: #4a3524; font-size: 18px; }
         label { display: block; margin: 10px 0 5px; font-weight: bold; font-size: 14px; }
         input, select, textarea { box-sizing: border-box; width: 100%; padding: 9px; border: 1px solid #cbbba4; border-radius: 4px; background: white; }
         textarea { min-height: 80px; resize: vertical; }
@@ -185,11 +192,18 @@ if ($tab === 'orders' && $editId > 0) {
         th { background: #eee4d5; font-size: 13px; }
         td form { border: 0; padding: 0; background: transparent; }
         .muted { color: #756a5d; }
-        @media (max-width: 760px) { body { padding: 14px; } .layout { grid-template-columns: 1fr; } table { display: block; overflow-x: auto; white-space: nowrap; } }
+        footer { text-align: center; color: #756a5d; font-size: 13px; padding: 20px 0 8px; border-top: 1px solid #e9dcc0; margin-top: 28px; }
+        @media (max-width: 760px) { body { padding: 14px; } .layout { grid-template-columns: 1fr; } table { display: block; overflow-x: auto; white-space: nowrap; } .brand h1 { font-size: 18px; } }
     </style>
 </head>
 <body>
-    <h1>Admin panel</h1>
+    <div class="header">
+        <div class="logo">TAM</div>
+        <div class="brand">
+            <h1>T.A.M REHAB - Quản trị hệ thống</h1>
+            <p class="subtitle">Dịch vụ giãn cơ trị liệu chuyên sâu</p>
+        </div>
+    </div>
     <nav>
         <?php foreach (['products' => 'Sản phẩm', 'customers' => 'Khách hàng', 'orders' => 'Đơn hàng'] as $key => $label): ?>
             <a class="<?= $tab === $key ? 'active' : '' ?>" href="?tab=<?= $key ?>"><?= h($label) ?></a>
@@ -226,5 +240,6 @@ if ($tab === 'orders' && $editId > 0) {
         </div>
     <?php endif; ?>
     <script>const type = document.getElementById('product_type'); const stock = document.getElementById('stock_quantity'); function updateStock() { const physical = type && type.value === 'physical'; if (stock) { stock.required = physical; stock.disabled = !physical; if (!physical) stock.value = ''; } } if (type) { type.addEventListener('change', updateStock); updateStock(); }</script>
+    <footer>&copy; 2026 T.A.M REHAB - Dịch vụ giãn cơ trị liệu chuyên sâu</footer>
 </body>
 </html>
