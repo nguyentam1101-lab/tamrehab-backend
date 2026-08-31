@@ -256,12 +256,6 @@
 
     let pollInterval = null;
 
-    document.getElementById('ho_ten').addEventListener('input', function () {
-      const name = this.value.trim();
-      const moTa = document.getElementById('mo_ta');
-      moTa.value = name ? 'TEST - ' + name : '';
-    });
-
     function showMessage(text, type) {
       messageBox.style.display = 'block';
       messageBox.className = 'status ' + type;
