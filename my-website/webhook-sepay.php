@@ -58,7 +58,13 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'Order not found',
-            'search_term' => $searchTerm
+            'search_term' => $searchTerm,
+            'debug' => [
+                'content_from_sepay' => $content,
+                'reference_from_sepay' => $reference,
+                'payload_keys' => array_keys($payload),
+                'hint' => 'Content from SePay does not match any order_id in database'
+            ]
         ]);
         exit;
     }
