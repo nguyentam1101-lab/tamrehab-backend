@@ -3,77 +3,393 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Thanh toán SePay</title>
+  <title>Thanh toán - T.A.M REHAB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; background:#f6f1ea; margin:0; padding:32px 16px; color:#1d1a17; }
-    .wrap { max-width:960px; margin:0 auto; background:#fff; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.05); border:1px solid #e8dcc5; padding:24px; }
-    .grid { display:grid; grid-template-columns:1fr 1.1fr; gap:24px; }
-    label { display:block; font-weight:700; margin-bottom:8px; }
-    input, textarea, button { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #d3c1a3; font-size:15px; }
-    textarea { min-height:110px; resize:vertical; }
-    button { background:#1d2d2f; color:#fff; cursor:pointer; border:none; font-weight:700; }
-    .panel { background:#fffaf5; border:1px solid #ebdcbe; border-radius:10px; padding:18px; }
-    .status { margin-top:16px; border-radius:8px; padding:12px; }
-    .success { background:#eaf8ec; border:1px solid #7fbc79; }
-    .error { background:#fdeceb; border:1px solid #d7726d; }
-    .qr { width:100%; max-width:280px; display:block; margin-top:12px; border:4px solid #fff; border-radius:10px; }
-    .muted { color:#685f59; }
-    @media (max-width: 760px) { .grid { grid-template-columns:1fr; } }
+    :root {
+      --opalya-dark: #35291F;
+      --opalya-darkHover: #231B14;
+      --opalya-bg: #E5C483;
+      --opalya-bgDark: #D8B36E;
+      --opalya-light: #F8F1E2;
+      --opalya-card: #FFFBF5;
+      --opalya-muted: #6E5D4F;
+      --opalya-border: #D8B877;
+      --tam-green: #4c8b45;
+      --tam-green-dark: #3d7238;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      background: linear-gradient(135deg, #f4efe7 0%, #e8dcc4 100%);
+      margin: 0;
+      padding: 24px 16px;
+      color: var(--opalya-dark);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--opalya-card);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(53, 41, 31, 0.12);
+      border: 1px solid var(--opalya-border);
+      padding: 32px;
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .brand-title {
+      font-family: 'Noto Serif', Georgia, serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--opalya-dark);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--opalya-muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    h1 {
+      font-family: 'Noto Serif', Georgia, serif;
+      font-size: 22px;
+      margin: 0 0 4px;
+      color: var(--opalya-dark);
+    }
+    .subtitle { color: var(--opalya-muted); font-size: 14px; margin: 0 0 24px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; }
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--opalya-border);
+      font-size: 15px;
+      font-family: inherit;
+      background: #fff;
+      color: var(--opalya-dark);
+    }
+    input:focus, textarea:focus { outline: 2px solid rgba(184, 134, 58, 0.3); border-color: #B8863A; }
+    textarea { min-height: 100px; resize: vertical; }
+    .field { margin-bottom: 16px; }
+    .btn-primary {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: var(--opalya-dark);
+      color: var(--opalya-light);
+      cursor: pointer;
+      border: none;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--opalya-darkHover); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status { margin-top: 16px; border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+    .success { background: #eaf8ec; border: 1px solid #7fbc79; color: #2d5a2a; }
+    .error { background: #fdeceb; border: 1px solid #d7726d; color: #8a2a23; }
+
+    /* Payment area */
+    .payment-area { display: none; }
+    .payment-area.active { display: block; }
+    .form-area.hidden { display: none; }
+    .summary-box {
+      background: var(--opalya-light);
+      border: 2px dashed var(--opalya-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(184, 134, 58, 0.2);
+      font-size: 14px;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .label { color: var(--opalya-muted); font-weight: 500; }
+    .summary-row .value { font-weight: 700; color: var(--opalya-dark); }
+    .summary-row .value.highlight { color: var(--tam-green); font-size: 20px; }
+    .qr-block {
+      text-align: center;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--opalya-border);
+    }
+    .qr-block img {
+      max-width: 280px;
+      width: 100%;
+      border: 6px solid #fff;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(53, 41, 31, 0.08);
+    }
+    .qr-block .qr-caption {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--opalya-muted);
+    }
+    .content-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: var(--opalya-bg);
+      border-radius: 8px;
+      font-weight: 700;
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 1px;
+      color: var(--opalya-dark);
+      word-break: break-all;
+    }
+    .poll-status {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      background: #fffaf3;
+      border: 1px solid var(--opalya-border);
+      color: var(--opalya-muted);
+    }
+    .poll-status.pending::before {
+      content: '⏳';
+      margin-right: 6px;
+    }
+    .poll-status.success {
+      background: #eaf8ec;
+      border-color: #7fbc79;
+      color: #2d5a2a;
+      font-weight: 700;
+    }
+    .poll-status.success::before {
+      content: '✓';
+      margin-right: 6px;
+    }
+    .poll-status.timeout {
+      background: #fff3cd;
+      border-color: #f0c75e;
+      color: #8a6a1a;
+    }
+    .retry-btn {
+      margin-top: 12px;
+      background: var(--opalya-dark);
+      color: var(--opalya-light);
+      border: none;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .retry-btn:hover { background: var(--opalya-darkHover); }
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: var(--opalya-muted);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .back-link:hover { color: var(--opalya-dark); }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+      vertical-align: -2px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 600px) {
+      .wrap { padding: 22px 18px; }
+      .brand-title { font-size: 20px; }
+      h1 { font-size: 19px; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Test thanh toán SePay</h1>
-    <div class="grid">
-      <div>
-        <form id="paymentForm">
-          <div>
-            <label>Họ tên</label>
-            <input type="text" id="ho_ten" required />
-          </div>
-          <div style="margin-top:14px;">
-            <label>Số điện thoại</label>
-            <input type="text" id="so_dien_thoai" required />
-          </div>
-          <div style="margin-top:14px;">
-            <label>Mô tả đơn hàng</label>
-            <textarea id="mo_ta"></textarea>
-          </div>
-          <div style="margin-top:16px;">
-            <button type="submit">Tạo đơn hàng</button>
-          </div>
-        </form>
-        <div id="messageBox" class="status" style="display:none"></div>
+    <div class="brand">
+      <div class="brand-title">T.A.M REHAB</div>
+      <div class="brand-sub">Dịch vụ giãn cơ trị liệu chuyên sâu</div>
+    </div>
+
+    <div id="formArea" class="form-area">
+      <h1>Đặt lịch trải nghiệm</h1>
+      <p class="subtitle">Vui lòng điền thông tin để hoàn tất đặt lịch và nhận mã QR thanh toán.</p>
+
+      <form id="paymentForm">
+        <div class="field">
+          <label>Họ tên *</label>
+          <input type="text" id="ho_ten" required maxlength="100" />
+        </div>
+        <div class="field">
+          <label>Số điện thoại *</label>
+          <input type="tel" id="so_dien_thoai" required maxlength="20" />
+        </div>
+        <div class="field">
+          <label>Mô tả tình trạng (không bắt buộc)</label>
+          <textarea id="mo_ta" maxlength="500"></textarea>
+        </div>
+        <button type="submit" id="submitBtn" class="btn-primary">Tạo đơn hàng</button>
+      </form>
+      <div id="messageBox" class="status" style="display:none"></div>
+    </div>
+
+    <div id="paymentArea" class="payment-area">
+      <h1>Quét QR để thanh toán</h1>
+      <p class="subtitle">Mở ứng dụng ngân hàng và quét mã QR bên dưới để hoàn tất thanh toán 2.000đ.</p>
+
+      <div class="summary-box">
+        <div class="summary-row">
+          <span class="label">Mã đơn hàng</span>
+          <span class="value" id="orderIdValue">--</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Số tiền</span>
+          <span class="value highlight">2.000đ</span>
+        </div>
       </div>
 
-      <div class="panel">
-        <h2>Thông tin thanh toán</h2>
-        <p><strong>Số tiền:</strong> 2.000đ</p>
-        <div id="orderInfo" class="muted">
-          <p><strong>Nội dung chuyển khoản:</strong> <span id="contentValue">--</span></p>
-        </div>
-        <img id="qrImage" class="qr" alt="QR SePay" style="display:none;" />
+      <div class="qr-block">
+        <img id="qrImage" alt="QR thanh toán SePay" />
+        <div class="qr-caption">Quét QR bằng app ngân hàng / MoMo / ZaloPay</div>
       </div>
+
+      <div class="content-box" id="contentValue">--</div>
+
+      <div class="poll-status pending" id="pollStatus">
+        Đang chờ thanh toán... Hệ thống sẽ tự động chuyển trang sau khi nhận được chuyển khoản.
+      </div>
+
+      <div style="text-align: center;">
+        <button type="button" id="retryBtn" class="retry-btn" style="display:none;">Tôi đã chuyển khoản</button>
+      </div>
+
+      <a href="https://www.tamrehab.com/" class="back-link">← Quay lại trang chủ</a>
     </div>
   </div>
 
   <script>
     const API_URL = 'https://tamrehab-backend.onrender.com';
+    const POLL_INTERVAL_MS = 3000;
+    const POLL_TIMEOUT_MS = 60000;
+
     const form = document.getElementById('paymentForm');
+    const submitBtn = document.getElementById('submitBtn');
     const messageBox = document.getElementById('messageBox');
-    const qrcode = document.getElementById('qrImage');
+    const formArea = document.getElementById('formArea');
+    const paymentArea = document.getElementById('paymentArea');
+    const orderIdValue = document.getElementById('orderIdValue');
     const contentValue = document.getElementById('contentValue');
+    const qrImage = document.getElementById('qrImage');
+    const pollStatus = document.getElementById('pollStatus');
+    const retryBtn = document.getElementById('retryBtn');
+
+    let pollTimer = null;
+    let pollStartTime = 0;
+
+    function showError(message) {
+      messageBox.className = 'status error';
+      messageBox.textContent = message;
+      messageBox.style.display = 'block';
+    }
+
+    function setLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      submitBtn.innerHTML = isLoading
+        ? '<span class="spinner"></span>Đang xử lý...'
+        : 'Tạo đơn hàng';
+    }
+
+    function showPaymentArea(order) {
+      formArea.classList.add('hidden');
+      paymentArea.classList.add('active');
+      orderIdValue.textContent = order.order_id;
+      contentValue.textContent = order.content;
+      qrImage.src = order.qr_url;
+      qrImage.onerror = () => {
+        qrImage.src = 'https://img.vietqr.io/image/' + (order.bank || 'BIDV') + '-' + (order.account_no || '96247TGLA3') + '-compact2.png?amount=' + (order.amount || 2000) + '&addInfo=' + encodeURIComponent(order.content) + '&accountName=' + encodeURIComponent(order.account_name || 'TAM REHAB');
+      };
+      startPolling(order.order_id);
+    }
+
+    function startPolling(orderId) {
+      pollStartTime = Date.now();
+      pollStatus.className = 'poll-status pending';
+      pollStatus.textContent = 'Đang chờ thanh toán... Hệ thống sẽ tự động chuyển trang sau khi nhận được chuyển khoản.';
+      retryBtn.style.display = 'none';
+
+      if (pollTimer) clearInterval(pollTimer);
+
+      const tick = async () => {
+        const elapsed = Date.now() - pollStartTime;
+        try {
+          const res = await fetch(API_URL + '/api/orders.php?order_id=' + encodeURIComponent(orderId));
+          const data = await res.json();
+          if (data && data.success && data.item && data.item.status === 'success') {
+            stopPolling();
+            pollStatus.className = 'poll-status success';
+            pollStatus.textContent = 'Thanh toán thành công! Đang chuyển trang...';
+            setTimeout(() => {
+              window.location.href = 'cam-on.html?order=' + encodeURIComponent(orderId);
+            }, 1200);
+            return;
+          }
+        } catch (err) {
+          console.warn('Poll error:', err);
+        }
+        if (elapsed >= POLL_TIMEOUT_MS) {
+          stopPolling();
+          pollStatus.className = 'poll-status timeout';
+          pollStatus.textContent = 'Chưa nhận được thanh toán sau 60 giây. Vui lòng kiểm tra lại hoặc thử lại sau.';
+          retryBtn.style.display = 'inline-block';
+        }
+      };
+
+      tick();
+      pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    retryBtn.addEventListener('click', () => {
+      const orderId = orderIdValue.textContent;
+      if (orderId && orderId !== '--') {
+        startPolling(orderId);
+      }
+    });
 
     document.getElementById('ho_ten').addEventListener('input', function () {
-      const name = this.value.trim();
       const moTa = document.getElementById('mo_ta');
-      moTa.value = name ? 'TEST - ' + name : '';
+      moTa.value = this.value.trim() ? 'Khách hàng: ' + this.value.trim() : '';
     });
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       messageBox.style.display = 'none';
-      messageBox.className = 'status';
+      setLoading(true);
 
       const payload = {
         ho_ten: document.getElementById('ho_ten').value.trim(),
@@ -87,31 +403,15 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
         const result = await response.json();
         if (!response.ok || !result.success) {
           throw new Error(result.message || 'Không thể tạo đơn hàng');
         }
-
-        contentValue.textContent = result.content;
-        qrcode.src = result.qr_url;
-        qrcode.style.display = 'block';
-
-        messageBox.classList.add('success');
-        messageBox.textContent = 'Tạo đơn hàng thành công.';
-        messageBox.style.display = 'block';
-
-        localStorage.setItem('latestOrder', JSON.stringify({
-          order_id: result.order_id,
-          amount: result.amount,
-          content: result.content
-        }));
-
-        window.location.href = 'cam-on.html?order=' + encodeURIComponent(result.order_id);
+        showPaymentArea(result);
       } catch (error) {
-        messageBox.classList.add('error');
-        messageBox.textContent = error.message || 'Đã xảy ra lỗi.';
-        messageBox.style.display = 'block';
+        showError(error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
       }
     });
   </script>

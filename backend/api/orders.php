@@ -13,6 +13,14 @@ require_once __DIR__ . '/../db.php';
 $pdo = tamrehab_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $orderId = trim((string)($_GET['order_id'] ?? ''));
+    if ($orderId !== '') {
+        $stmt = $pdo->prepare('SELECT o.*, p.name AS product_name FROM orders o LEFT JOIN products p ON p.id = o.product_id WHERE o.order_id = :order_id LIMIT 1');
+        $stmt->execute([':order_id' => $orderId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'item' => $row ?: null]);
+        exit;
+    }
     $stmt = $pdo->query('SELECT o.*, p.name AS product_name FROM orders o LEFT JOIN products p ON p.id = o.product_id ORDER BY o.id DESC');
     echo json_encode(['success' => true, 'items' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
     exit;
