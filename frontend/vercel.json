@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "https://tamrehab-backend.onrender.com/admin.php"
+    },
+    {
+      "source": "/thanh-toan",
+      "destination": "https://tamrehab-backend.onrender.com/thanh-toan.html"
+    },
+    {
+      "source": "/webhook-sepay",
+      "destination": "https://tamrehab-backend.onrender.com/webhook-sepay.php"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "https://tamrehab-backend.onrender.com/api/$1"
+    }
+  ]
+}
