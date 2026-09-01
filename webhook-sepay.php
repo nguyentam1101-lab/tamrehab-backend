@@ -22,15 +22,15 @@ if (!is_array($payload)) {
     exit;
 }
 
-$orderId = trim((string) ($payload['order_id'] ?? $payload['reference'] ?? $payload['code'] ?? ''));
-$amount = $payload['amount'] ?? $payload['transferAmount'] ?? $payload['total'] ?? null;
-$content = trim((string) ($payload['content'] ?? $payload['description'] ?? $payload['message'] ?? ''));
+$orderId = trim((string) ($payload['order_id'] ?? $payload['reference'] ?? $payload['code'] ?? $payload['referenceCode'] ?? ''));
+$amount = $payload['transferAmount'] ?? $payload['amount'] ?? $payload['total'] ?? null;
+$content = trim((string) ($payload['content'] ?? $payload['transactionContent'] ?? $payload['description'] ?? $payload['message'] ?? ''));
 
-if ($orderId === '' || !is_numeric($amount) || $content === '') {
+if ($orderId === '' && $content === '') {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Missing order_id, amount, or content'
+        'message' => 'Missing order identifier or transfer content'
     ]);
     exit;
 }
@@ -40,15 +40,24 @@ try {
 
     $statement = $db->prepare(
         "UPDATE orders
-         SET status = 'success', paid_at = CURRENT_TIMESTAMP
-         WHERE order_id = :order_id
-           AND status = 'pending'"
+         SET status = 'success', paid_at = CURRENT_TIMESTAMP,
+             amount = CASE WHEN :amount IS NOT NULL AND :amount > 0 THEN :amount ELSE amount END,
+             content = CASE WHEN :content != '' THEN :content ELSE content END
+         WHERE status = 'pending'
+           AND (order_id = :order_id OR (:content_match != '' AND content LIKE '%' || :content_match || '%'))"
     );
-    $statement->execute([':order_id' => $orderId]);
+    $statement->execute([
+        ':amount' => is_numeric($amount) ? (float) $amount : null,
+        ':content' => $content,
+        ':order_id' => $orderId,
+        ':content_match' => $content
+    ]);
 
     if ($statement->rowCount() === 0) {
-        $insertStatement = $db->prepare('INSERT INTO orders (order_id, amount, content, status, paid_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)');
-        $insertStatement->execute([$orderId, (float) $amount, $content, 'success']);
+        $db->rollBack();
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'No pending order matched']);
+        exit;
     }
 
     $db->commit();

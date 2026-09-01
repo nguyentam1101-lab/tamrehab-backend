@@ -22,19 +22,32 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $action = $input['action'] ?? 'save_customer';
 
 if ($action === 'save_customer') {
+    $id = (int)($input['id'] ?? 0);
     $name = trim((string)($input['name'] ?? ''));
     $phone = trim((string)($input['phone'] ?? ''));
     $zalo = trim((string)($input['zalo'] ?? ''));
     $registeredAt = trim((string)($input['registered_at'] ?? ''));
 
-    $stmt = $pdo->prepare('INSERT INTO customers (name, phone, zalo, registered_at, created_at) VALUES (:name, :phone, :zalo, :registered_at, CURRENT_TIMESTAMP)');
-    $stmt->execute([
+    $sql = $id > 0
+        ? 'UPDATE customers SET name = :name, phone = :phone, zalo = :zalo, registered_at = :registered_at WHERE id = :id'
+        : 'INSERT INTO customers (name, phone, zalo, registered_at, created_at) VALUES (:name, :phone, :zalo, :registered_at, CURRENT_TIMESTAMP)';
+    $stmt = $pdo->prepare($sql);
+    $params = [
         ':name' => $name,
         ':phone' => $phone,
         ':zalo' => $zalo,
         ':registered_at' => $registeredAt !== '' ? $registeredAt : null
-    ]);
+    ];
+    if ($id > 0) $params[':id'] = $id;
+    $stmt->execute($params);
     echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'delete_customer') {
+    $stmt = $pdo->prepare('DELETE FROM customers WHERE id = :id');
+    $stmt->execute([':id' => (int)($input['id'] ?? 0)]);
+    echo json_encode(['success' => $stmt->rowCount() > 0]);
     exit;
 }
 

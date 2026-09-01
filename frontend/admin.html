@@ -173,7 +173,7 @@
         panel.innerHTML = `
           <h2>Sản phẩm</h2>
           <table>
-            <thead><tr><th>Tên</th><th>Loại</th><th>Giá</th><th>Tồn kho</th></tr></thead>
+            <thead><tr><th>Tên</th><th>Loại</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
             <tbody>
               ${items.map(item => `
                 <tr>
@@ -181,8 +181,9 @@
                   <td>${item.product_type}</td>
                   <td>${Number(item.price).toLocaleString('vi-VN')} VNĐ</td>
                   <td>${item.stock_quantity ?? '—'}</td>
+                  <td><button type="button" data-edit="product" data-id="${item.id}">Sửa</button> <button type="button" data-delete="product" data-id="${item.id}">Xóa</button></td>
                 </tr>
-              `).join('') || '<tr><td colspan="4">Không có dữ liệu</td></tr>'}
+              `).join('') || '<tr><td colspan="5">Không có dữ liệu</td></tr>'}
             </tbody>
           </table>
         `;
@@ -192,7 +193,7 @@
         panel.innerHTML = `
           <h2>Khách hàng</h2>
           <table>
-            <thead><tr><th>Tên</th><th>Điện thoại</th><th>Zalo</th><th>Ngày đăng ký</th></tr></thead>
+            <thead><tr><th>Tên</th><th>Điện thoại</th><th>Zalo</th><th>Ngày đăng ký</th><th>Thao tác</th></tr></thead>
             <tbody>
               ${items.map(item => `
                 <tr>
@@ -200,8 +201,9 @@
                   <td>${item.phone ?? '—'}</td>
                   <td>${item.zalo ?? '—'}</td>
                   <td>${item.registered_at ?? '—'}</td>
+                  <td><button type="button" data-edit="customer" data-id="${item.id}">Sửa</button> <button type="button" data-delete="customer" data-id="${item.id}">Xóa</button></td>
                 </tr>
-              `).join('') || '<tr><td colspan="4">Không có dữ liệu</td></tr>'}
+              `).join('') || '<tr><td colspan="5">Không có dữ liệu</td></tr>'}
             </tbody>
           </table>
         `;
@@ -211,7 +213,7 @@
         panel.innerHTML = `
           <h2>Đơn hàng</h2>
           <table>
-            <thead><tr><th>Mã đơn</th><th>Sản phẩm</th><th>Số tiền</th><th>Trạng thái</th></tr></thead>
+            <thead><tr><th>Mã đơn</th><th>Sản phẩm</th><th>Số tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
             <tbody>
               ${items.map(item => `
                 <tr>
@@ -219,8 +221,9 @@
                   <td>${item.product_name ?? '—'}</td>
                   <td>${Number(item.amount).toLocaleString('vi-VN')} VNĐ</td>
                   <td>${item.status}</td>
+                  <td>${item.status !== 'success' ? `<button type="button" data-approve-order="${item.id}">Duyệt</button>` : ''} <button type="button" data-edit="order" data-id="${item.id}">Sửa</button> <button type="button" data-delete="order" data-id="${item.id}">Xóa</button></td>
                 </tr>
-              `).join('') || '<tr><td colspan="4">Không có dữ liệu</td></tr>'}
+              `).join('') || '<tr><td colspan="5">Không có dữ liệu</td></tr>'}
             </tbody>
           </table>
         `;
@@ -258,6 +261,44 @@
         state.tab = btn.dataset.tab;
         refreshTab();
       });
+    });
+
+    async function postAction(endpoint, payload) {
+      const response = await fetch(API_URL + endpoint, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Lỗi thao tác');
+    }
+
+    document.addEventListener('click', async event => {
+      const control = event.target.closest('[data-edit], [data-delete], [data-approve-order]');
+      if (!control) return;
+      try {
+        if (control.dataset.approveOrder) {
+          await postAction('/api/orders.php', {action: 'set_success', id: control.dataset.approveOrder});
+          showNotice('Đã duyệt thanh toán.', 'success');
+        } else if (control.dataset.delete) {
+          if (!confirm('Bạn có chắc muốn xóa dữ liệu này?')) return;
+          await postAction('/api/' + control.dataset.delete + 's.php', {action: 'delete_' + control.dataset.delete, id: control.dataset.id});
+          showNotice('Đã xóa dữ liệu.', 'success');
+        } else {
+          const type = control.dataset.edit;
+          const endpoint = '/api/' + type + 's.php';
+          const label = type === 'product' ? 'tên sản phẩm' : type === 'customer' ? 'tên khách hàng' : 'mã đơn hàng';
+          const value = prompt('Nhập ' + label + ' mới:');
+          if (value === null || value.trim() === '') return;
+          const field = type === 'product' ? 'name' : type === 'customer' ? 'name' : 'order_id';
+          const current = await fetch(API_URL + endpoint).then(response => response.json());
+          const item = (current.items || []).find(entry => String(entry.id) === control.dataset.id);
+          if (!item) throw new Error('Không tìm thấy dữ liệu');
+          await postAction(endpoint, {action: 'save_' + type, ...item, id: control.dataset.id, [field]: value.trim()});
+          showNotice('Đã cập nhật dữ liệu.', 'success');
+        }
+        refreshTab();
+      } catch (error) {
+        showNotice(error.message || 'Lỗi thao tác', 'error');
+      }
     });
 
     document.addEventListener('submit', async (event) => {
