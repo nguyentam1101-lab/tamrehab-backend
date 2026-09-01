@@ -22,9 +22,13 @@ if (!is_array($payload)) {
     exit;
 }
 
-$orderId = trim((string) ($payload['order_id'] ?? $payload['reference'] ?? $payload['code'] ?? $payload['referenceCode'] ?? ''));
+$explicitId = trim((string) ($payload['order_id'] ?? ''));
 $amount = $payload['transferAmount'] ?? $payload['amount'] ?? $payload['total'] ?? null;
 $content = trim((string) ($payload['content'] ?? $payload['transactionContent'] ?? $payload['description'] ?? $payload['message'] ?? ''));
+$identifierText = $explicitId . ' ' . $content;
+$orderId = preg_match('/TAM-\d{14}-\d{3}/i', $identifierText, $match)
+    ? strtoupper($match[0])
+    : ($explicitId !== '' ? $explicitId : '');
 
 if ($orderId === '' && $content === '') {
     http_response_code(400);
@@ -43,8 +47,9 @@ try {
          SET status = 'success', paid_at = CURRENT_TIMESTAMP,
              amount = CASE WHEN :amount IS NOT NULL AND :amount > 0 THEN :amount ELSE amount END,
              content = CASE WHEN :content != '' THEN :content ELSE content END
-         WHERE status = 'pending'
-           AND (order_id = :order_id OR (:content_match != '' AND content LIKE '%' || :content_match || '%'))"
+                 WHERE status = 'pending'
+                     AND (:amount IS NULL OR :amount <= 0 OR amount = :amount)
+                     AND (order_id = :order_id OR (:content_match != '' AND content LIKE '%' || :content_match || '%'))"
     );
     $statement->execute([
         ':amount' => is_numeric($amount) ? (float) $amount : null,
