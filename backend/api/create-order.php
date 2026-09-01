@@ -31,7 +31,7 @@ if (!preg_match('/^[0-9+() .-]{8,20}$/', $soDienThoai)) {
 
 $orderId = 'TAM-' . date('YmdHis') . '-' . rand(100, 999);
 $amount = 2000;
-$content = 'TAM' . strtoupper(substr(str_replace([' ', '-'], '', $hoTen), 0, 8) ?: 'PAY') . '-' . substr($orderId, -4);
+$content = preg_replace('/[^A-Za-z0-9]/', '', $orderId);
 
 try {
     $customer = $pdo->prepare('SELECT id FROM customers WHERE phone = :phone LIMIT 1');
