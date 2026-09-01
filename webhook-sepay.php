@@ -50,7 +50,7 @@ try {
     while ($candidate = $candidates->fetch(PDO::FETCH_ASSOC)) {
         $candidateContent = tamrehab_normalize_transfer_content((string) $candidate['content']);
         if (($orderId !== '' && strcasecmp($candidate['order_id'], $orderId) === 0)
-            || ($normalizedContent !== '' && $candidateContent === $normalizedContent)) {
+            || ($normalizedContent !== '' && $candidateContent !== '' && str_contains($normalizedContent, $candidateContent))) {
             $matchedOrderId = $candidate['order_id'];
             break;
         }
