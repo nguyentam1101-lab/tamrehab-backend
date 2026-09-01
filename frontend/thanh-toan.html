@@ -355,9 +355,9 @@
       contentValue.textContent = order.content;
       qrImage.onerror = () => {
         qrImage.onerror = null;
-        qrImage.src = 'https://img.vietqr.io/image/970422-123456789-compact.png?amount=' + (order.amount || 2000) + '&addInfo=' + encodeURIComponent(order.content) + '&accountName=' + encodeURIComponent('TAM REHAB');
+        qrImage.src = 'https://vietqr.app/img?bank=BIDV&acc=96247TGLA3&template=compact&showinfo=true&holder=NGUYEN%20NGUYEN%20TAM&amount=' + (order.amount || 2000) + '&addInfo=' + encodeURIComponent(order.content);
       };
-      qrImage.src = order.qr_url || 'https://img.vietqr.io/image/970422-123456789-compact.png?amount=' + (order.amount || 2000) + '&addInfo=' + encodeURIComponent(order.content) + '&accountName=' + encodeURIComponent('TAM REHAB');
+      qrImage.src = order.qr_url || 'https://vietqr.app/img?bank=BIDV&acc=96247TGLA3&template=compact&showinfo=true&holder=NGUYEN%20NGUYEN%20TAM&amount=' + (order.amount || 2000) + '&addInfo=' + encodeURIComponent(order.content);
       startPolling(order.order_id);
     }
 

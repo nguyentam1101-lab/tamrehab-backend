@@ -54,7 +54,7 @@ try {
         ':status' => 'pending'
     ]);
 
-    $qrUrl = 'https://img.vietqr.io/image/970422-123456789-compact.png?amount=' . $amount . '&addInfo=' . urlencode($content) . '&accountName=' . urlencode('TAM REHAB');
+    $qrUrl = 'https://vietqr.app/img?bank=BIDV&acc=96247TGLA3&template=compact&showinfo=true&holder=NGUYEN%20NGUYEN%20TAM&amount=' . $amount . '&addInfo=' . urlencode($content);
 
     echo json_encode([
         'success' => true,
