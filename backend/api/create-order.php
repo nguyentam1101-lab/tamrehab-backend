@@ -17,9 +17,15 @@ $hoTen = trim((string)($input['ho_ten'] ?? ''));
 $soDienThoai = trim((string)($input['so_dien_thoai'] ?? ''));
 $moTa = trim((string)($input['mo_ta'] ?? ''));
 
-if ($hoTen === '' && $soDienThoai === '' && $moTa === '') {
+if ($hoTen === '' || $soDienThoai === '') {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Thiếu thông tin đơn hàng']);
+    echo json_encode(['success' => false, 'message' => 'Vui lòng nhập họ tên và số điện thoại']);
+    exit;
+}
+
+if (!preg_match('/^[0-9+() .-]{8,20}$/', $soDienThoai)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Số điện thoại không hợp lệ']);
     exit;
 }
 
@@ -28,6 +34,16 @@ $amount = 2000;
 $content = 'TAM' . strtoupper(substr(str_replace([' ', '-'], '', $hoTen), 0, 8) ?: 'PAY') . '-' . substr($orderId, -4);
 
 try {
+    $customer = $pdo->prepare('SELECT id FROM customers WHERE phone = :phone LIMIT 1');
+    $customer->execute([':phone' => $soDienThoai]);
+    if ($customer->fetchColumn()) {
+        $updateCustomer = $pdo->prepare('UPDATE customers SET name = :name WHERE phone = :phone');
+        $updateCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai]);
+    } else {
+        $insertCustomer = $pdo->prepare('INSERT INTO customers (name, phone, registered_at, created_at) VALUES (:name, :phone, CURRENT_DATE, CURRENT_TIMESTAMP)');
+        $insertCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai]);
+    }
+
     $stmt = $pdo->prepare('INSERT INTO orders (order_id, customer_name, phone, amount, content, status, created_at) VALUES (:order_id, :customer_name, :phone, :amount, :content, :status, CURRENT_TIMESTAMP)');
     $stmt->execute([
         ':order_id' => $orderId,
