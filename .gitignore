@@ -1,2 +1,9 @@
-*.db
+node_modules/
+.env
+.env.*
 .DS_Store
+logs/
+*.log
+backend/brain.db
+backend/*.db
+frontend/.cache/

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đặt lịch thành công - T.A.M REHAB</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #f4efe7 0%, #e8dcc4 100%);
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .box {
+      max-width: 720px;
+      width: 100%;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e9dcc0;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(74, 53, 36, 0.08);
+    }
+    .brand {
+      color: #4a3524;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+    .icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      background: #4c8b45;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 36px;
+      font-weight: bold;
+    }
+    h1 {
+      margin: 0 0 16px;
+      color: #4a3524;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .message {
+      color: #4a4a4a;
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 0 12px;
+    }
+    .highlight {
+      color: #4a3524;
+      font-weight: 600;
+      background: #fffaf2;
+      border-left: 4px solid #4c8b45;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 20px 0;
+      text-align: left;
+      font-size: 15px;
+    }
+    .order-box {
+      background: #f9f3e8;
+      border: 2px dashed #9d7b49;
+      border-radius: 10px;
+      padding: 18px;
+      margin: 24px 0;
+    }
+    .order-label {
+      font-size: 13px;
+      color: #756a5d;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .code {
+      font-size: 24px;
+      font-weight: 700;
+      color: #4a3524;
+      letter-spacing: 1px;
+      word-break: break-all;
+    }
+    .note {
+      color: #756a5d;
+      font-size: 14px;
+      margin: 16px 0 28px;
+    }
+    .btn {
+      display: inline-block;
+      background: #4a3524;
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #6b4a32;
+    }
+    @media (max-width: 480px) {
+      .box { padding: 28px 20px; }
+      h1 { font-size: 22px; }
+      .code { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="brand">T.A.M REHAB</div>
+    <div class="icon">&#10003;</div>
+    <h1>ĐẶT LỊCH THÀNH CÔNG!</h1>
+    <p class="message">Chúng tôi đã nhận được yêu cầu đặt lịch của bạn.</p>
+    <div class="highlight">
+      Nhân viên T.A.M REHAB sẽ xác nhận lịch hẹn qua tin nhắn Zalo trong vòng 15 phút tới.
+    </div>
+    <div class="order-box">
+      <div class="order-label">Mã đơn hàng của bạn</div>
+      <div class="code" id="orderCode">--</div>
+    </div>
+    <p class="note">Vui lòng kiểm tra tin nhắn Zalo để xác nhận lịch hẹn.</p>
+    <a href="https://www.tamrehab.com/" target="_blank" class="btn">Về trang chủ</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const order = params.get('order');
+    if (order) {
+      document.getElementById('orderCode').textContent = order;
+    }
+  </script>
+</body>
+</html>
