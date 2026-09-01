@@ -29,6 +29,7 @@ $identifierText = $explicitId . ' ' . $content;
 $orderId = preg_match('/TAM-\d{14}-\d{3}/i', $identifierText, $match)
     ? strtoupper($match[0])
     : ($explicitId !== '' ? $explicitId : '');
+$normalizedContent = tamrehab_normalize_transfer_content($content);
 
 if ($orderId === '' && $content === '') {
     http_response_code(400);
@@ -42,20 +43,30 @@ if ($orderId === '' && $content === '') {
 try {
     $db->beginTransaction();
 
+    $amountValue = is_numeric($amount) ? (float) $amount : null;
+    $candidates = $db->prepare('SELECT order_id, content FROM orders WHERE status = "pending" AND (:amount IS NULL OR :amount <= 0 OR amount = :amount)');
+    $candidates->execute([':amount' => $amountValue]);
+    $matchedOrderId = '';
+    while ($candidate = $candidates->fetch(PDO::FETCH_ASSOC)) {
+        $candidateContent = tamrehab_normalize_transfer_content((string) $candidate['content']);
+        if (($orderId !== '' && strcasecmp($candidate['order_id'], $orderId) === 0)
+            || ($normalizedContent !== '' && $candidateContent === $normalizedContent)) {
+            $matchedOrderId = $candidate['order_id'];
+            break;
+        }
+    }
+
     $statement = $db->prepare(
         "UPDATE orders
          SET status = 'success', paid_at = CURRENT_TIMESTAMP,
              amount = CASE WHEN :amount IS NOT NULL AND :amount > 0 THEN :amount ELSE amount END,
              content = CASE WHEN :content != '' THEN :content ELSE content END
-                 WHERE status = 'pending'
-                     AND (:amount IS NULL OR :amount <= 0 OR amount = :amount)
-                     AND (order_id = :order_id OR (:content_match != '' AND content LIKE '%' || :content_match || '%'))"
+         WHERE order_id = :order_id AND status = 'pending'"
     );
     $statement->execute([
-        ':amount' => is_numeric($amount) ? (float) $amount : null,
+        ':amount' => $amountValue,
         ':content' => $content,
-        ':order_id' => $orderId,
-        ':content_match' => $content
+        ':order_id' => $matchedOrderId
     ]);
 
     if ($statement->rowCount() === 0) {
@@ -82,4 +93,11 @@ try {
     error_log('SePay webhook error: ' . $error->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database update failed']);
+}
+
+function tamrehab_normalize_transfer_content(string $value): string
+{
+    $value = trim($value);
+    $transliterated = function_exists('iconv') ? iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value) : $value;
+    return strtoupper((string) preg_replace('/[^A-Z0-9]/i', '', $transliterated));
 }
