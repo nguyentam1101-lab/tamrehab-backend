@@ -346,6 +346,15 @@
     });
 
     refreshTab();
+    setInterval(async () => {
+      if (state.tab !== 'orders') return;
+      try {
+        const items = await loadOrders();
+        renderTable('orders', items);
+      } catch (error) {
+        console.warn('Order refresh error:', error);
+      }
+    }, 3000);
   </script>
   <footer>&copy; 2026 T.A.M REHAB - Dịch vụ giãn cơ trị liệu chuyên sâu</footer>
 </body>
