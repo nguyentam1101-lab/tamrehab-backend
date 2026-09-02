@@ -15,6 +15,7 @@ $pdo = tamrehab_db();
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $hoTen = trim((string)($input['ho_ten'] ?? ''));
 $soDienThoai = trim((string)($input['so_dien_thoai'] ?? ''));
+$email = trim((string)($input['email'] ?? ''));
 $moTa = trim((string)($input['mo_ta'] ?? ''));
 
 if ($hoTen === '' || $soDienThoai === '') {
@@ -29,6 +30,12 @@ if (!preg_match('/^[0-9+() .-]{8,20}$/', $soDienThoai)) {
     exit;
 }
 
+if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Email không hợp lệ']);
+    exit;
+}
+
 $orderId = 'TAM-' . date('YmdHis') . '-' . rand(100, 999);
 $amount = 2000;
 $content = preg_replace('/[^A-Za-z0-9]/', '', $orderId);
@@ -37,11 +44,11 @@ try {
     $customer = $pdo->prepare('SELECT id FROM customers WHERE phone = :phone LIMIT 1');
     $customer->execute([':phone' => $soDienThoai]);
     if ($customer->fetchColumn()) {
-        $updateCustomer = $pdo->prepare('UPDATE customers SET name = :name WHERE phone = :phone');
-        $updateCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai]);
+        $updateCustomer = $pdo->prepare('UPDATE customers SET name = :name, email = COALESCE(NULLIF(:email, ''), email) WHERE phone = :phone');
+        $updateCustomer->execute([':name' => $hoTen, ':email' => $email, ':phone' => $soDienThoai]);
     } else {
-        $insertCustomer = $pdo->prepare('INSERT INTO customers (name, phone, registered_at, created_at) VALUES (:name, :phone, CURRENT_DATE, CURRENT_TIMESTAMP)');
-        $insertCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai]);
+        $insertCustomer = $pdo->prepare('INSERT INTO customers (name, phone, email, registered_at, created_at) VALUES (:name, :phone, :email, CURRENT_DATE, CURRENT_TIMESTAMP)');
+        $insertCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai, ':email' => $email ?: null]);
     }
 
     $stmt = $pdo->prepare('INSERT INTO orders (order_id, customer_name, phone, amount, content, status, created_at) VALUES (:order_id, :customer_name, :phone, :amount, :content, :status, CURRENT_TIMESTAMP)');

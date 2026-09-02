@@ -34,6 +34,7 @@ function tamrehab_db(): PDO
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             phone TEXT,
+            email TEXT,
             zalo TEXT,
             registered_at TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -58,7 +59,7 @@ function tamrehab_db(): PDO
 
     $tables = [
         'products' => ['name', 'product_type', 'price', 'description', 'stock_quantity', 'created_at'],
-        'customers' => ['name', 'phone', 'zalo', 'registered_at', 'created_at'],
+        'customers' => ['name', 'phone', 'email', 'zalo', 'registered_at', 'created_at'],
         'orders' => ['order_id', 'customer_name', 'phone', 'product_id', 'quantity', 'amount', 'content', 'status', 'paid_at', 'created_at'],
     ];
 
@@ -84,6 +85,7 @@ function tamrehab_column_sql(string $table, string $column): string
         'stock_quantity' => 'INTEGER',
         'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP',
         'phone' => 'TEXT',
+        'email' => 'TEXT',
         'zalo' => 'TEXT',
         'registered_at' => 'TEXT',
         'order_id' => 'TEXT UNIQUE',

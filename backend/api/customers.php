@@ -25,16 +25,24 @@ if ($action === 'save_customer') {
     $id = (int)($input['id'] ?? 0);
     $name = trim((string)($input['name'] ?? ''));
     $phone = trim((string)($input['phone'] ?? ''));
+    $email = trim((string)($input['email'] ?? ''));
     $zalo = trim((string)($input['zalo'] ?? ''));
     $registeredAt = trim((string)($input['registered_at'] ?? ''));
 
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Email không hợp lệ']);
+        exit;
+    }
+
     $sql = $id > 0
-        ? 'UPDATE customers SET name = :name, phone = :phone, zalo = :zalo, registered_at = :registered_at WHERE id = :id'
-        : 'INSERT INTO customers (name, phone, zalo, registered_at, created_at) VALUES (:name, :phone, :zalo, :registered_at, CURRENT_TIMESTAMP)';
+        ? 'UPDATE customers SET name = :name, phone = :phone, email = COALESCE(NULLIF(:email, ''), email), zalo = :zalo, registered_at = :registered_at WHERE id = :id'
+        : 'INSERT INTO customers (name, phone, email, zalo, registered_at, created_at) VALUES (:name, :phone, :email, :zalo, :registered_at, CURRENT_TIMESTAMP)';
     $stmt = $pdo->prepare($sql);
     $params = [
         ':name' => $name,
         ':phone' => $phone,
+        ':email' => $email !== '' ? $email : null,
         ':zalo' => $zalo,
         ':registered_at' => $registeredAt !== '' ? $registeredAt : null
     ];

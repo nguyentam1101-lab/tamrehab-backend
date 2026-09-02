@@ -7,3 +7,7 @@ logs/
 backend/brain.db
 backend/*.db
 frontend/.cache/
+
+backend/resend_config.txt
+.env
+.env.*
