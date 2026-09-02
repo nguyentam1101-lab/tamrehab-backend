@@ -64,7 +64,18 @@
 
   <script>
     const API_URL = 'https://tamrehab-backend.onrender.com';
-    const state = { tab: 'products', editId: null };
+    const state = { tab: 'products', editId: null, editOrder: null };
+
+    function nextOrderId() {
+      const now = new Date();
+      const stamp = now.getFullYear().toString()
+        + String(now.getMonth() + 1).padStart(2, '0')
+        + String(now.getDate()).padStart(2, '0')
+        + String(now.getHours()).padStart(2, '0')
+        + String(now.getMinutes()).padStart(2, '0')
+        + String(now.getSeconds()).padStart(2, '0');
+      return 'TAM-' + stamp;
+    }
 
     function showNotice(message, type = 'success') {
       const box = document.getElementById('notice');
@@ -124,33 +135,38 @@
       }
 
       if (tab === 'orders') {
+        const order = state.editOrder || {};
+        const isEdit = Boolean(order.id);
         panel.innerHTML = `
-          <h2>Thêm đơn hàng</h2>
+          <h2>${isEdit ? 'Sửa đơn hàng' : 'Thêm đơn hàng'}</h2>
+          <p class="subtitle">Dùng mã đơn mới. Bấm Lưu — chỉ điền form chưa gửi email. Gmail +test vào hộp thư gốc (cả Spam).</p>
           <form id="orderForm">
             <input type="hidden" name="action" value="save_order" />
+            <input type="hidden" name="id" value="${order.id || ''}" />
             <label>Mã đơn hàng</label>
-            <input name="order_id" required />
+            <input name="order_id" required value="${order.order_id || nextOrderId()}" />
             <label>Tên khách hàng</label>
-            <input name="customer_name" />
+            <input name="customer_name" value="${order.customer_name || ''}" />
             <label>Số điện thoại</label>
-            <input name="phone" />
-            <label>Email (để gửi xác nhận đơn hàng)</label>
-            <input name="email" type="email" required placeholder="ban+test@gmail.com" />
+            <input name="phone" value="${order.phone || ''}" />
+            <label>Email nhận xác nhận</label>
+            <input name="email" type="email" required placeholder="ban+test@gmail.com" value="${order.email || ''}" />
             <label>Sản phẩm</label>
             <select name="product_id" id="orderProductSelect"></select>
             <label>Số lượng</label>
-            <input name="quantity" type="number" min="1" value="1" required />
+            <input name="quantity" type="number" min="1" value="${order.quantity || 1}" required />
             <label>Số tiền</label>
-            <input name="amount" type="number" min="0" step="0.01" required />
+            <input name="amount" type="number" min="0" step="0.01" value="${order.amount || ''}" required />
             <label>Nội dung</label>
-            <textarea name="content"></textarea>
+            <textarea name="content">${order.content || ''}</textarea>
             <label>Trạng thái</label>
             <select name="status">
-              <option value="pending">pending</option>
-              <option value="success">success</option>
+              <option value="pending" ${order.status === 'success' ? '' : 'selected'}>pending</option>
+              <option value="success" ${order.status === 'success' ? 'selected' : ''}>success</option>
             </select>
             <div class="actions">
-              <button class="primary" type="submit">Lưu</button>
+              <button class="primary" type="submit">Lưu và gửi email</button>
+              ${isEdit ? '<button class="secondary" type="button" id="cancelEditOrder">Hủy sửa</button>' : ''}
             </div>
           </form>
         `;
@@ -232,7 +248,7 @@
                   <td>${item.product_name ?? '—'}</td>
                   <td>${Number(item.amount).toLocaleString('vi-VN')} VNĐ</td>
                   <td>${item.status}</td>
-                  <td>${item.status !== 'success' ? `<button type="button" data-approve-order="${item.id}">Duyệt</button>` : ''} <button type="button" data-edit="order" data-id="${item.id}">Sửa</button> <button type="button" data-delete="order" data-id="${item.id}">Xóa</button></td>
+                  <td>${item.status !== 'success' ? `<button type="button" data-approve-order="${item.id}">Duyệt</button>` : ''} <button type="button" data-edit="order" data-id="${item.id}">Sửa</button> <button type="button" data-send-order-email="${item.id}">Gửi email xác nhận</button> <button type="button" data-delete="order" data-id="${item.id}">Xóa</button></td>
                 </tr>
               `).join('') || '<tr><td colspan="7">Không có dữ liệu</td></tr>'}
             </tbody>
@@ -260,7 +276,12 @@
         const products = await loadProducts();
         const select = document.getElementById('orderProductSelect');
         if (select) {
-          select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (${p.product_type})</option>`).join('');
+          select.innerHTML = products.length
+            ? products.map(p => `<option value="${p.id}">${p.name} (${p.product_type})</option>`).join('')
+            : '<option value="">Chưa có sản phẩm — vẫn lưu được đơn</option>';
+          if (state.editOrder && state.editOrder.product_id) {
+            select.value = String(state.editOrder.product_id);
+          }
         }
       }
     }
@@ -283,9 +304,24 @@
     }
 
     document.addEventListener('click', async event => {
-      const control = event.target.closest('[data-edit], [data-delete], [data-approve-order]');
+      if (event.target && event.target.id === 'cancelEditOrder') {
+        state.editOrder = null;
+        refreshTab();
+        return;
+      }
+      const control = event.target.closest('[data-edit], [data-delete], [data-approve-order], [data-send-order-email]');
       if (!control) return;
       try {
+        if (control.dataset.sendOrderEmail) {
+          const response = await fetch(API_URL + '/api/orders.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'send_confirmation', id: control.dataset.sendOrderEmail })
+          });
+          const result = await response.json();
+          showNotice(result.message || 'Không gửi được email', result.success ? 'success' : 'error');
+          return;
+        }
         if (control.dataset.approveOrder) {
           await postAction('/api/orders.php', {action: 'set_success', id: control.dataset.approveOrder});
           showNotice('Đã duyệt thanh toán.', 'success');
@@ -293,17 +329,23 @@
           if (!confirm('Bạn có chắc muốn xóa dữ liệu này?')) return;
           await postAction('/api/' + control.dataset.delete + 's.php', {action: 'delete_' + control.dataset.delete, id: control.dataset.id});
           showNotice('Đã xóa dữ liệu.', 'success');
+        } else if (control.dataset.edit === 'order') {
+          const items = await loadOrders();
+          const item = items.find(entry => String(entry.id) === control.dataset.id);
+          if (!item) throw new Error('Không tìm thấy đơn hàng');
+          state.editOrder = item;
+          refreshTab();
+          return;
         } else {
           const type = control.dataset.edit;
           const endpoint = '/api/' + type + 's.php';
-          const label = type === 'product' ? 'tên sản phẩm' : type === 'customer' ? 'tên khách hàng' : 'mã đơn hàng';
+          const label = type === 'product' ? 'tên sản phẩm' : 'tên khách hàng';
           const value = prompt('Nhập ' + label + ' mới:');
           if (value === null || value.trim() === '') return;
-          const field = type === 'product' ? 'name' : type === 'customer' ? 'name' : 'order_id';
           const current = await fetch(API_URL + endpoint).then(response => response.json());
           const item = (current.items || []).find(entry => String(entry.id) === control.dataset.id);
           if (!item) throw new Error('Không tìm thấy dữ liệu');
-          await postAction(endpoint, {action: 'save_' + type, ...item, id: control.dataset.id, [field]: value.trim()});
+          await postAction(endpoint, {action: 'save_' + type, ...item, id: control.dataset.id, name: value.trim()});
           showNotice('Đã cập nhật dữ liệu.', 'success');
         }
         refreshTab();
@@ -351,7 +393,11 @@
           body: JSON.stringify({ action: 'save_order', ...data })
         });
         const result = await response.json();
-        if (result.success) { showNotice(result.message || 'Đã lưu đơn hàng.', 'success'); refreshTab(); }
+        if (result.success) {
+          state.editOrder = null;
+          showNotice(result.message || 'Đã lưu đơn hàng.', 'success');
+          refreshTab();
+        }
         else { showNotice(result.message || 'Lỗi', 'error'); }
       }
     });

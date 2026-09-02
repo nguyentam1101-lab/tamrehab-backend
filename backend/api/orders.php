@@ -76,6 +76,14 @@ if ($action === 'save_order') {
             ':status' => $status
         ];
     }
+    $previousEmail = '';
+    if ($id > 0) {
+        $oldStmt = $pdo->prepare('SELECT email FROM orders WHERE id = :id LIMIT 1');
+        $oldStmt->execute([':id' => $id]);
+        $oldRow = $oldStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $previousEmail = trim((string) ($oldRow['email'] ?? ''));
+    }
+
     $pdo->beginTransaction();
     try {
         $stmt->execute($params);
@@ -92,13 +100,18 @@ if ($action === 'save_order') {
         $pdo->commit();
     } catch (Throwable $error) {
         $pdo->rollBack();
+        $message = $error->getMessage();
+        if (str_contains($message, 'UNIQUE') || (string) $error->getCode() === '23000') {
+            $message = 'Mã đơn đã tồn tại. Hãy dùng mã mới (ví dụ TAM-' . date('YmdHis') . ').';
+        }
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => $error->getMessage()]);
+        echo json_encode(['success' => false, 'message' => $message]);
         exit;
     }
 
-    $response = ['success' => true];
-    if ($id === 0) {
+    $response = ['success' => true, 'message' => 'Đã lưu đơn hàng.'];
+    $shouldSend = $id === 0 || ($email !== '' && $previousEmail === '');
+    if ($shouldSend) {
         $productStmt = $pdo->prepare('SELECT name, product_type FROM products WHERE id = :id LIMIT 1');
         $productStmt->execute([':id' => $productId]);
         $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -121,6 +134,27 @@ if ($action === 'save_order') {
     }
 
     echo json_encode($response);
+    exit;
+}
+
+if ($action === 'send_confirmation') {
+    $id = (int) ($input['id'] ?? 0);
+    $stmt = $pdo->prepare('SELECT o.*, p.name AS product_name, p.product_type AS product_type FROM orders o LEFT JOIN products p ON p.id = o.product_id WHERE o.id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Không tìm thấy đơn hàng']);
+        exit;
+    }
+    $result = tamrehab_send_order_confirmation($pdo, $order);
+    echo json_encode([
+        'success' => !empty($result['success']),
+        'email_confirmation' => $result,
+        'message' => !empty($result['success'])
+            ? ('Đã gửi email xác nhận tới ' . ($order['email'] ?? ''))
+            : ($result['message'] ?? 'Gửi email thất bại'),
+    ]);
     exit;
 }
 
