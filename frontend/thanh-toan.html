@@ -262,6 +262,10 @@
           <input type="tel" id="so_dien_thoai" required maxlength="20" />
         </div>
         <div class="field">
+          <label>Email (không bắt buộc)</label>
+          <input type="email" id="email" placeholder="name@example.com" />
+        </div>
+        <div class="field">
           <label>Mô tả tình trạng (không bắt buộc)</label>
           <textarea id="mo_ta" maxlength="500"></textarea>
         </div>
@@ -429,6 +433,7 @@
       const payload = {
         ho_ten: document.getElementById('ho_ten').value.trim(),
         so_dien_thoai: document.getElementById('so_dien_thoai').value.trim(),
+        email: document.getElementById('email').value.trim(),
         mo_ta: document.getElementById('mo_ta').value.trim()
       };
 

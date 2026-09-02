@@ -110,6 +110,8 @@
             <input name="name" required />
             <label>Số điện thoại</label>
             <input name="phone" />
+            <label>Email</label>
+            <input name="email" type="email" />
             <label>Zalo</label>
             <input name="zalo" />
             <label>Ngày đăng ký</label>
@@ -193,17 +195,18 @@
         panel.innerHTML = `
           <h2>Khách hàng</h2>
           <table>
-            <thead><tr><th>Tên</th><th>Điện thoại</th><th>Zalo</th><th>Ngày đăng ký</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Tên</th><th>Điện thoại</th><th>Email</th><th>Zalo</th><th>Ngày đăng ký</th><th>Thao tác</th></tr></thead>
             <tbody>
               ${items.map(item => `
                 <tr>
                   <td>${item.name}</td>
                   <td>${item.phone ?? '—'}</td>
+                  <td>${item.email ?? '—'}</td>
                   <td>${item.zalo ?? '—'}</td>
                   <td>${item.registered_at ?? '—'}</td>
                   <td><button type="button" data-edit="customer" data-id="${item.id}">Sửa</button> <button type="button" data-delete="customer" data-id="${item.id}">Xóa</button></td>
                 </tr>
-              `).join('') || '<tr><td colspan="5">Không có dữ liệu</td></tr>'}
+              `).join('') || '<tr><td colspan="6">Không có dữ liệu</td></tr>'}
             </tbody>
           </table>
         `;

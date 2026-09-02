@@ -59,19 +59,24 @@ try {
         } elseif ($action === 'save_customer') {
             $name = postString('name');
             $phone = postString('phone') ?: null;
+            $email = postString('email') ?: null;
             $zalo = postString('zalo') ?: null;
             $registeredAt = postString('registered_at') ?: null;
+
+            if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new InvalidArgumentException('Email không hợp lệ.');
+            }
 
             if ($name === '') {
                 throw new InvalidArgumentException('Tên khách hàng không được để trống.');
             }
 
             if ($id > 0) {
-                $statement = $db->prepare('UPDATE customers SET name = ?, phone = ?, zalo = ?, registered_at = ? WHERE id = ?');
-                $statement->execute([$name, $phone, $zalo, $registeredAt, $id]);
+                $statement = $db->prepare('UPDATE customers SET name = ?, phone = ?, email = COALESCE(NULLIF(?, ''), email), zalo = ?, registered_at = ? WHERE id = ?');
+                $statement->execute([$name, $phone, $email, $zalo, $registeredAt, $id]);
             } else {
-                $statement = $db->prepare('INSERT INTO customers (name, phone, zalo, registered_at) VALUES (?, ?, ?, ?)');
-                $statement->execute([$name, $phone, $zalo, $registeredAt]);
+                $statement = $db->prepare('INSERT INTO customers (name, phone, email, zalo, registered_at) VALUES (?, ?, ?, ?, ?)');
+                $statement->execute([$name, $phone, $email !== '' ? $email : null, $zalo, $registeredAt]);
             }
             $message = 'Đã lưu khách hàng.';
             $tab = 'customers';
@@ -230,8 +235,8 @@ if ($tab === 'orders' && $editId > 0) {
         </div>
     <?php elseif ($tab === 'customers'): ?>
         <div class="layout">
-            <form method="post"><h2><?= $editCustomer ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng' ?></h2><input type="hidden" name="action" value="save_customer"><input type="hidden" name="tab" value="customers"><input type="hidden" name="id" value="<?= h((string) ($editCustomer['id'] ?? 0)) ?>"><label>Tên</label><input name="name" value="<?= h($editCustomer['name'] ?? '') ?>" required><label>Số điện thoại</label><input name="phone" value="<?= h($editCustomer['phone'] ?? '') ?>"><label>Zalo</label><input name="zalo" value="<?= h($editCustomer['zalo'] ?? '') ?>"><label>Ngày đăng ký</label><input type="date" name="registered_at" value="<?= h($editCustomer['registered_at'] ?? '') ?>"><div class="actions"><button class="primary"><?= $editCustomer ? 'Lưu thay đổi' : 'Thêm mới' ?></button><?php if ($editCustomer): ?><a href="?tab=customers">Hủy</a><?php endif; ?></div></form>
-            <table><tr><th>Tên</th><th>Điện thoại</th><th>Zalo</th><th>Ngày đăng ký</th><th></th></tr><?php foreach ($customers as $customer): ?><tr><td><?= h($customer['name']) ?></td><td><?= h($customer['phone']) ?></td><td><?= h($customer['zalo']) ?></td><td><?= h($customer['registered_at']) ?></td><td><a href="?tab=customers&edit=<?= $customer['id'] ?>">Sửa</a> <form method="post"><input type="hidden" name="action" value="delete_customer"><input type="hidden" name="tab" value="customers"><input type="hidden" name="id" value="<?= h((string) $customer['id']) ?>"><button onclick="return confirm('Xóa khách hàng này?')">Xóa</button></form></td></tr><?php endforeach; ?></table>
+            <form method="post"><h2><?= $editCustomer ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng' ?></h2><input type="hidden" name="action" value="save_customer"><input type="hidden" name="tab" value="customers"><input type="hidden" name="id" value="<?= h((string) ($editCustomer['id'] ?? 0)) ?>"><label>Tên</label><input name="name" value="<?= h($editCustomer['name'] ?? '') ?>" required><label>Số điện thoại</label><input name="phone" value="<?= h($editCustomer['phone'] ?? '') ?>"><label>Email</label><input type="email" name="email" value="<?= h($editCustomer['email'] ?? '') ?>"><label>Zalo</label><input name="zalo" value="<?= h($editCustomer['zalo'] ?? '') ?>"><label>Ngày đăng ký</label><input type="date" name="registered_at" value="<?= h($editCustomer['registered_at'] ?? '') ?>"><div class="actions"><button class="primary"><?= $editCustomer ? 'Lưu thay đổi' : 'Thêm mới' ?></button><?php if ($editCustomer): ?><a href="?tab=customers">Hủy</a><?php endif; ?></div></form>
+            <table><tr><th>Tên</th><th>Điện thoại</th><th>Email</th><th>Zalo</th><th>Ngày đăng ký</th><th></th></tr><?php foreach ($customers as $customer): ?><tr><td><?= h($customer['name']) ?></td><td><?= h($customer['phone']) ?></td><td><?= h($customer['email']) ?></td><td><?= h($customer['zalo']) ?></td><td><?= h($customer['registered_at']) ?></td><td><a href="?tab=customers&edit=<?= $customer['id'] ?>">Sửa</a> <form method="post"><input type="hidden" name="action" value="delete_customer"><input type="hidden" name="tab" value="customers"><input type="hidden" name="id" value="<?= h((string) $customer['id']) ?>"><button onclick="return confirm('Xóa khách hàng này?')">Xóa</button></form></td></tr><?php endforeach; ?></table>
         </div>
     <?php else: ?>
         <div class="layout">
