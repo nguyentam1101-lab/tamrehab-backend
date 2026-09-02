@@ -1298,8 +1298,9 @@
 
         // Form Submit Handler
         const GOOGLE_SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWCEWWf98U5mOMGw_22m9Jxq1WGvJnzUmT-8mI9nRVXsAkRhleS2Dnq9JaY5uCPsCUBg/exec';
+        const BACKEND_URL = 'https://tamrehab-backend.onrender.com';
 
-        function handleFormSubmit() {
+        async function handleFormSubmit() {
             const submitBtn = document.getElementById('submit-btn');
             const submitBtnText = document.getElementById('submit-btn-text');
 
@@ -1311,41 +1312,49 @@
                 khungGio: document.getElementById('input-khung-gio').value
             };
 
-            const customerPayload = {
-                action: 'save_customer',
-                name: formData.hoTen,
-                phone: formData.soDienThoai,
-                email: formData.email,
-                zalo: ''
-            };
-            fetch('https://tamrehab-backend.onrender.com/api/customers.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(customerPayload)
-            }).catch(function (err) {
-                console.warn('Không thể lưu thông tin khách hàng:', err);
-            });
-
             submitBtn.disabled = true;
             submitBtnText.textContent = 'ĐANG GỬI...';
 
-            fetch(GOOGLE_SHEET_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(formData)
-            })
-            .then(() => {
-                document.getElementById('success-modal').classList.remove('hidden');
-            })
-            .catch((error) => {
+            try {
+                const emailRes = await fetch(`${BACKEND_URL}/send-email.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: formData.hoTen,
+                        email: formData.email,
+                        phone: formData.soDienThoai,
+                        source: 'waitlist',
+                        mon_the_thao: formData.monTheThao,
+                        khung_gio: formData.khungGio
+                    })
+                });
+
+                const emailJson = await emailRes.json().catch(() => ({}));
+                if (emailJson && emailJson.success === true && emailJson.test === true) {
+                    console.log('Đã gửi email test');
+                }
+
+                if (!emailRes.ok && (!emailJson || !emailJson.success)) {
+                    console.warn('Không thể gửi email sequence:', emailJson);
+                }
+            } catch (error) {
+                console.error('Lỗi gọi send-email.php:', error);
+            }
+
+            try {
+                await fetch(GOOGLE_SHEET_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(formData)
+                });
+            } catch (error) {
                 console.error('Lỗi gửi form:', error);
-                document.getElementById('success-modal').classList.remove('hidden');
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtnText.textContent = 'ĐẶT LỊCH TRẢI NGHIỆM 600K NGAY';
-            });
+            }
+
+            document.getElementById('success-modal').classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtnText.textContent = 'ĐẶT LỊCH TRẢI NGHIỆM 600K NGAY';
         }
 
         function closeModal() {
