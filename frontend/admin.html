@@ -139,7 +139,7 @@
         const isEdit = Boolean(order.id);
         panel.innerHTML = `
           <h2>${isEdit ? 'Sửa đơn hàng' : 'Thêm đơn hàng'}</h2>
-          <p class="subtitle">Dùng mã đơn mới. Bấm Lưu — chỉ điền form chưa gửi email. Gmail +test vào hộp thư gốc (cả Spam).</p>
+          <p class="subtitle">Email có +test (ví dụ nguyentam1101+test@gmail.com) sẽ nhận 1 mail xác nhận đơn + đủ 3 mail chăm sóc ngay. Dùng mã đơn mới rồi bấm Lưu.</p>
           <form id="orderForm">
             <input type="hidden" name="action" value="save_order" />
             <input type="hidden" name="id" value="${order.id || ''}" />

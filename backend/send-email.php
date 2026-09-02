@@ -99,11 +99,6 @@ function tamrehab_process_due_email_queue(PDO $pdo): void
     }
 }
 
-function tamrehab_is_test_email(string $email): bool
-{
-    return preg_match('/\+test@/i', $email) === 1;
-}
-
 $pdo = tamrehab_db();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -138,11 +133,7 @@ try {
     $testMode = tamrehab_is_test_email($email);
 
     if ($testMode) {
-        $sent = [];
-        foreach ($sequence as $emailItem) {
-            $result = tamrehab_send_resend_email($email, $emailItem['subject'], $emailItem['body']);
-            $sent[] = ['type' => $emailItem['type'], 'success' => $result['success'], 'message' => $result['message'] ?? null];
-        }
+        $sent = tamrehab_send_sequence_now($email);
 
         echo json_encode([
             'success' => true,

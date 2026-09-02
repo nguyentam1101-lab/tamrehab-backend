@@ -96,6 +96,25 @@ function tamrehab_send_resend_email(string $toEmail, string $subject, string $bo
     return ['success' => true, 'provider_message_id' => (string) $decoded['id']];
 }
 
+function tamrehab_is_test_email(string $email): bool
+{
+    return preg_match('/\+test@/i', $email) === 1;
+}
+
+function tamrehab_send_sequence_now(string $toEmail): array
+{
+    $sent = [];
+    foreach (tamrehab_email_sequence() as $emailItem) {
+        $result = tamrehab_send_resend_email($toEmail, $emailItem['subject'], $emailItem['body']);
+        $sent[] = [
+            'type' => $emailItem['type'],
+            'success' => $result['success'],
+            'message' => $result['message'] ?? null,
+        ];
+    }
+    return $sent;
+}
+
 function tamrehab_format_vnd($amount): string
 {
     return number_format((float) $amount, 0, ',', '.') . ' VNĐ';
@@ -193,6 +212,16 @@ function tamrehab_send_order_confirmation(PDO $pdo, array $order): array
 
     if ($result['success']) {
         $result['message'] = 'Đã gửi email xác nhận đơn hàng tới ' . $toEmail;
+        if (tamrehab_is_test_email($toEmail)) {
+            $result['sequence'] = tamrehab_send_sequence_now($toEmail);
+            $ok = 0;
+            foreach ($result['sequence'] as $item) {
+                if (!empty($item['success'])) {
+                    $ok++;
+                }
+            }
+            $result['message'] = 'Đã gửi email xác nhận và ' . $ok . '/3 email chăm sóc (chế độ +test) tới ' . $toEmail;
+        }
     }
 
     return $result;

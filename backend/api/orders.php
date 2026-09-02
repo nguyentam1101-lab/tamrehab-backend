@@ -125,7 +125,7 @@ if ($action === 'save_order') {
             'amount' => $amount,
         ]);
         if (!empty($response['email_confirmation']['success'])) {
-            $response['message'] = 'Đã lưu đơn hàng và gửi email xác nhận.';
+            $response['message'] = $response['email_confirmation']['message'] ?? 'Đã lưu đơn hàng và gửi email xác nhận.';
         } elseif (!empty($response['email_confirmation']['skipped'])) {
             $response['message'] = 'Đã lưu đơn hàng. Chưa gửi email vì thiếu địa chỉ email hợp lệ.';
         } else {
@@ -151,9 +151,7 @@ if ($action === 'send_confirmation') {
     echo json_encode([
         'success' => !empty($result['success']),
         'email_confirmation' => $result,
-        'message' => !empty($result['success'])
-            ? ('Đã gửi email xác nhận tới ' . ($order['email'] ?? ''))
-            : ($result['message'] ?? 'Gửi email thất bại'),
+        'message' => $result['message'] ?? 'Gửi email thất bại',
     ]);
     exit;
 }
