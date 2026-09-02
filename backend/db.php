@@ -47,6 +47,7 @@ function tamrehab_db(): PDO
             order_id TEXT UNIQUE,
             customer_name TEXT,
             phone TEXT,
+            email TEXT,
             product_id INTEGER,
             quantity INTEGER NOT NULL DEFAULT 1,
             amount REAL NOT NULL DEFAULT 0,
@@ -77,7 +78,7 @@ function tamrehab_db(): PDO
     $tables = [
         'products' => ['name', 'product_type', 'price', 'description', 'stock_quantity', 'created_at'],
         'customers' => ['name', 'phone', 'email', 'zalo', 'registered_at', 'created_at'],
-        'orders' => ['order_id', 'customer_name', 'phone', 'product_id', 'quantity', 'amount', 'content', 'status', 'paid_at', 'created_at'],
+        'orders' => ['order_id', 'customer_name', 'phone', 'email', 'product_id', 'quantity', 'amount', 'content', 'status', 'paid_at', 'created_at'],
         'email_queue' => ['customer_id', 'email_type', 'to_email', 'subject', 'body', 'send_at', 'status', 'sent_at', 'provider_message_id', 'error_message', 'created_at'],
     ];
 

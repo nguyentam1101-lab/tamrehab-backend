@@ -10,18 +10,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../email-lib.php';
 $pdo = tamrehab_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $orderId = trim((string)($_GET['order_id'] ?? ''));
     if ($orderId !== '') {
-        $stmt = $pdo->prepare('SELECT o.*, p.name AS product_name FROM orders o LEFT JOIN products p ON p.id = o.product_id WHERE o.order_id = :order_id LIMIT 1');
+        $stmt = $pdo->prepare('SELECT o.*, p.name AS product_name, p.product_type AS product_type FROM orders o LEFT JOIN products p ON p.id = o.product_id WHERE o.order_id = :order_id LIMIT 1');
         $stmt->execute([':order_id' => $orderId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'item' => $row ?: null]);
         exit;
     }
-    $stmt = $pdo->query('SELECT o.*, p.name AS product_name FROM orders o LEFT JOIN products p ON p.id = o.product_id ORDER BY o.id DESC');
+    $stmt = $pdo->query('SELECT o.*, p.name AS product_name, p.product_type AS product_type FROM orders o LEFT JOIN products p ON p.id = o.product_id ORDER BY o.id DESC');
     echo json_encode(['success' => true, 'items' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
     exit;
 }
@@ -32,27 +33,47 @@ $action = $input['action'] ?? 'save_order';
 if ($action === 'save_order') {
     $id = (int)($input['id'] ?? 0);
     $orderId = trim((string)($input['order_id'] ?? ''));
+    $customerName = trim((string)($input['customer_name'] ?? ''));
+    $phone = trim((string)($input['phone'] ?? ''));
+    $email = trim((string)($input['email'] ?? ''));
     $productId = (int)($input['product_id'] ?? 0);
     $quantity = max(1, (int)($input['quantity'] ?? 1));
     $amount = (float)($input['amount'] ?? 0);
     $content = trim((string)($input['content'] ?? ''));
     $status = trim((string)($input['status'] ?? 'pending'));
 
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Email không hợp lệ']);
+        exit;
+    }
+
     if ($id > 0) {
-        $stmt = $pdo->prepare('UPDATE orders SET order_id = :order_id, product_id = :product_id, quantity = :quantity, amount = :amount, content = :content, status = :status WHERE id = :id');
+        $stmt = $pdo->prepare('UPDATE orders SET order_id = :order_id, customer_name = :customer_name, phone = :phone, email = :email, product_id = :product_id, quantity = :quantity, amount = :amount, content = :content, status = :status WHERE id = :id');
         $params = [
-            ':order_id' => $orderId, ':product_id' => $productId ?: null, ':quantity' => $quantity,
-            ':amount' => $amount, ':content' => $content, ':status' => $status, ':id' => $id
+            ':order_id' => $orderId,
+            ':customer_name' => $customerName !== '' ? $customerName : null,
+            ':phone' => $phone !== '' ? $phone : null,
+            ':email' => $email !== '' ? $email : null,
+            ':product_id' => $productId ?: null,
+            ':quantity' => $quantity,
+            ':amount' => $amount,
+            ':content' => $content,
+            ':status' => $status,
+            ':id' => $id
         ];
     } else {
-        $stmt = $pdo->prepare('INSERT INTO orders (order_id, product_id, quantity, amount, content, status, created_at) VALUES (:order_id, :product_id, :quantity, :amount, :content, :status, CURRENT_TIMESTAMP)');
+        $stmt = $pdo->prepare('INSERT INTO orders (order_id, customer_name, phone, email, product_id, quantity, amount, content, status, created_at) VALUES (:order_id, :customer_name, :phone, :email, :product_id, :quantity, :amount, :content, :status, CURRENT_TIMESTAMP)');
         $params = [
-        ':order_id' => $orderId,
-        ':product_id' => $productId ?: null,
-        ':quantity' => $quantity,
-        ':amount' => $amount,
-        ':content' => $content,
-        ':status' => $status
+            ':order_id' => $orderId,
+            ':customer_name' => $customerName !== '' ? $customerName : null,
+            ':phone' => $phone !== '' ? $phone : null,
+            ':email' => $email !== '' ? $email : null,
+            ':product_id' => $productId ?: null,
+            ':quantity' => $quantity,
+            ':amount' => $amount,
+            ':content' => $content,
+            ':status' => $status
         ];
     }
     $pdo->beginTransaction();
@@ -75,7 +96,31 @@ if ($action === 'save_order') {
         echo json_encode(['success' => false, 'message' => $error->getMessage()]);
         exit;
     }
-    echo json_encode(['success' => true]);
+
+    $response = ['success' => true];
+    if ($id === 0) {
+        $productStmt = $pdo->prepare('SELECT name, product_type FROM products WHERE id = :id LIMIT 1');
+        $productStmt->execute([':id' => $productId]);
+        $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $response['email_confirmation'] = tamrehab_send_order_confirmation($pdo, [
+            'order_id' => $orderId,
+            'customer_name' => $customerName,
+            'email' => $email,
+            'product_name' => $product['name'] ?? '',
+            'product_type' => $product['product_type'] ?? 'service',
+            'quantity' => $quantity,
+            'amount' => $amount,
+        ]);
+        if (!empty($response['email_confirmation']['success'])) {
+            $response['message'] = 'Đã lưu đơn hàng và gửi email xác nhận.';
+        } elseif (!empty($response['email_confirmation']['skipped'])) {
+            $response['message'] = 'Đã lưu đơn hàng. Chưa gửi email vì thiếu địa chỉ email hợp lệ.';
+        } else {
+            $response['message'] = 'Đã lưu đơn hàng nhưng gửi email xác nhận thất bại: ' . ($response['email_confirmation']['message'] ?? '');
+        }
+    }
+
+    echo json_encode($response);
     exit;
 }
 
