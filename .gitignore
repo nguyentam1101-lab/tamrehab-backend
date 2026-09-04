@@ -6,6 +6,7 @@ logs/
 *.log
 backend/brain.db
 backend/*.db
+backend/resend_config.txt
 frontend/.cache/
 
 backend/resend_config.txt

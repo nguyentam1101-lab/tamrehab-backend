@@ -114,6 +114,8 @@
             <input name="email" type="email" />
             <label>Zalo</label>
             <input name="zalo" />
+            <label>Email</label>
+            <input name="email" type="email" />
             <label>Ngày đăng ký</label>
             <input name="registered_at" type="date" />
             <div class="actions">
@@ -130,6 +132,12 @@
             <input type="hidden" name="action" value="save_order" />
             <label>Mã đơn hàng</label>
             <input name="order_id" required />
+            <label>Tên khách hàng</label>
+            <input name="customer_name" />
+            <label>Số điện thoại</label>
+            <input name="phone" />
+            <label>Email khách hàng</label>
+            <input name="email" type="email" placeholder="Bắt buộc để gửi email xác nhận" />
             <label>Sản phẩm</label>
             <select name="product_id" id="orderProductSelect"></select>
             <label>Số lượng</label>
@@ -216,11 +224,12 @@
         panel.innerHTML = `
           <h2>Đơn hàng</h2>
           <table>
-            <thead><tr><th>Mã đơn</th><th>Sản phẩm</th><th>Số tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+            <thead><tr><th>Mã đơn</th><th>Khách</th><th>Sản phẩm</th><th>Số tiền</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
             <tbody>
               ${items.map(item => `
                 <tr>
-                  <td>${item.order_id}</td>
+                  <td>${item.order_id}<br><small>${item.email || 'Chưa có email'}</small></td>
+                  <td>${item.customer_name ?? '—'}</td>
                   <td>${item.product_name ?? '—'}</td>
                   <td>${Number(item.amount).toLocaleString('vi-VN')} VNĐ</td>
                   <td>${item.status}</td>
@@ -343,7 +352,14 @@
           body: JSON.stringify({ action: 'save_order', ...data })
         });
         const result = await response.json();
-        if (result.success) { showNotice('Đã lưu đơn hàng.', 'success'); refreshTab(); }
+        if (result.success) {
+          if (result.email_sent) {
+            showNotice('Đã lưu đơn hàng và gửi email xác nhận tới khách.', 'success');
+          } else {
+            showNotice('Đã lưu đơn hàng. Email xác nhận chưa gửi: ' + (result.email_message || 'thiếu email khách hoặc lỗi Resend'), 'error');
+          }
+          refreshTab();
+        }
         else { showNotice(result.message || 'Lỗi', 'error'); }
       }
     });

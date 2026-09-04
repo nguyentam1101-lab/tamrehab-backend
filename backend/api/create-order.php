@@ -44,8 +44,8 @@ try {
     $customer = $pdo->prepare('SELECT id FROM customers WHERE phone = :phone LIMIT 1');
     $customer->execute([':phone' => $soDienThoai]);
     if ($customer->fetchColumn()) {
-        $updateCustomer = $pdo->prepare('UPDATE customers SET name = :name, email = COALESCE(NULLIF(:email, ''), email) WHERE phone = :phone');
-        $updateCustomer->execute([':name' => $hoTen, ':email' => $email, ':phone' => $soDienThoai]);
+        $updateCustomer = $pdo->prepare('UPDATE customers SET name = :name, email = :email WHERE phone = :phone');
+        $updateCustomer->execute([':name' => $hoTen, ':email' => $email !== '' ? $email : null, ':phone' => $soDienThoai]);
     } else {
         $insertCustomer = $pdo->prepare('INSERT INTO customers (name, phone, email, registered_at, created_at) VALUES (:name, :phone, :email, CURRENT_DATE, CURRENT_TIMESTAMP)');
         $insertCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai, ':email' => $email ?: null]);

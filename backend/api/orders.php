@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../mailer.php';
 $pdo = tamrehab_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -37,22 +38,31 @@ if ($action === 'save_order') {
     $amount = (float)($input['amount'] ?? 0);
     $content = trim((string)($input['content'] ?? ''));
     $status = trim((string)($input['status'] ?? 'pending'));
+    $customerName = trim((string)($input['customer_name'] ?? ''));
+    $phone = trim((string)($input['phone'] ?? ''));
+    $email = trim((string)($input['email'] ?? ''));
 
     if ($id > 0) {
-        $stmt = $pdo->prepare('UPDATE orders SET order_id = :order_id, product_id = :product_id, quantity = :quantity, amount = :amount, content = :content, status = :status WHERE id = :id');
+        $stmt = $pdo->prepare('UPDATE orders SET order_id = :order_id, product_id = :product_id, quantity = :quantity, amount = :amount, content = :content, status = :status, customer_name = :customer_name, phone = :phone, email = :email WHERE id = :id');
         $params = [
             ':order_id' => $orderId, ':product_id' => $productId ?: null, ':quantity' => $quantity,
-            ':amount' => $amount, ':content' => $content, ':status' => $status, ':id' => $id
+            ':amount' => $amount, ':content' => $content, ':status' => $status, ':id' => $id,
+            ':customer_name' => $customerName !== '' ? $customerName : null,
+            ':phone' => $phone !== '' ? $phone : null,
+            ':email' => $email !== '' ? $email : null,
         ];
     } else {
-        $stmt = $pdo->prepare('INSERT INTO orders (order_id, product_id, quantity, amount, content, status, created_at) VALUES (:order_id, :product_id, :quantity, :amount, :content, :status, CURRENT_TIMESTAMP)');
+        $stmt = $pdo->prepare('INSERT INTO orders (order_id, product_id, quantity, amount, content, status, customer_name, phone, email, created_at) VALUES (:order_id, :product_id, :quantity, :amount, :content, :status, :customer_name, :phone, :email, CURRENT_TIMESTAMP)');
         $params = [
         ':order_id' => $orderId,
         ':product_id' => $productId ?: null,
         ':quantity' => $quantity,
         ':amount' => $amount,
         ':content' => $content,
-        ':status' => $status
+        ':status' => $status,
+        ':customer_name' => $customerName !== '' ? $customerName : null,
+        ':phone' => $phone !== '' ? $phone : null,
+        ':email' => $email !== '' ? $email : null,
         ];
     }
     $pdo->beginTransaction();
@@ -75,7 +85,22 @@ if ($action === 'save_order') {
         echo json_encode(['success' => false, 'message' => $error->getMessage()]);
         exit;
     }
-    echo json_encode(['success' => true]);
+
+    $emailResult = ['success' => false, 'message' => 'Không gửi email (đơn cập nhật)'];
+    if ($id === 0) {
+        try {
+            $emailResult = tamrehab_send_order_confirmation($pdo, $orderId);
+        } catch (Throwable $mailError) {
+            $emailResult = ['success' => false, 'message' => $mailError->getMessage()];
+            error_log('Order confirmation email failed: ' . $mailError->getMessage());
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'email_sent' => !empty($emailResult['success']),
+        'email_message' => $emailResult['message'] ?? ($emailResult['success'] ? 'Đã gửi email xác nhận' : null),
+    ]);
     exit;
 }
 

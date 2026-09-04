@@ -1,8 +1,8 @@
 FROM php:8.2-cli
 
 RUN apt-get update \
-    && apt-get install -y sqlite3 libsqlite3-dev \
-    && docker-php-ext-install pdo_sqlite \
+    && apt-get install -y sqlite3 libsqlite3-dev libcurl4-openssl-dev \
+    && docker-php-ext-install pdo_sqlite curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
