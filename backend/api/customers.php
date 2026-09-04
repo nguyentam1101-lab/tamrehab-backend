@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../mailer.php';
 $pdo = tamrehab_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -48,7 +49,26 @@ if ($action === 'save_customer') {
     ];
     if ($id > 0) $params[':id'] = $id;
     $stmt->execute($params);
-    echo json_encode(['success' => true]);
+
+    $emailResult = null;
+    if ($id === 0 && $email !== '') {
+        try {
+            $isTest = str_contains(strtolower($email), '+test') || !empty($input['test']);
+            if ($isTest) {
+                $r1 = tamrehab_send_resend_email($email, tamrehab_sequence_email('welcome', ['name' => $name])['subject'], tamrehab_sequence_email('welcome', ['name' => $name])['html']);
+                $r2 = tamrehab_send_resend_email($email, tamrehab_sequence_email('nurture', ['name' => $name])['subject'], tamrehab_sequence_email('nurture', ['name' => $name])['html']);
+                $r3 = tamrehab_send_resend_email($email, tamrehab_sequence_email('close', ['name' => $name])['subject'], tamrehab_sequence_email('close', ['name' => $name])['html']);
+                $emailResult = ['success' => $r1['success'] && $r2['success'] && $r3['success'], 'test' => true, 'details' => [$r1, $r2, $r3]];
+            } else {
+                $seq = tamrehab_sequence_email('welcome', ['name' => $name]);
+                $emailResult = tamrehab_send_resend_email($email, $seq['subject'], $seq['html']);
+            }
+        } catch (Throwable $e) {
+            $emailResult = ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    echo json_encode(['success' => true, 'email' => $emailResult]);
     exit;
 }
 

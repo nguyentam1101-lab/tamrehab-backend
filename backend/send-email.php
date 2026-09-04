@@ -36,6 +36,26 @@ if ($isTest && $to === '') {
     exit;
 }
 
+if (in_array($type, ['all', 'sequence', 'waitlist'], true)) {
+    $t1 = tamrehab_sequence_email('welcome', ['name' => $name]);
+    $t2 = tamrehab_sequence_email('nurture', ['name' => $name]);
+    $t3 = tamrehab_sequence_email('close', ['name' => $name]);
+    $r1 = tamrehab_send_resend_email($to, $t1['subject'], $t1['html']);
+    $r2 = tamrehab_send_resend_email($to, $t2['subject'], $t2['html']);
+    $r3 = tamrehab_send_resend_email($to, $t3['subject'], $t3['html']);
+    echo json_encode([
+        'success' => $r1['success'] && $r2['success'] && $r3['success'],
+        'type' => $type,
+        'test' => $isTest,
+        'results' => [
+            'welcome' => $r1,
+            'nurture' => $r2,
+            'close' => $r3,
+        ]
+    ]);
+    exit;
+}
+
 if (in_array($type, ['welcome', 'nurture', 'close'], true)) {
     $template = tamrehab_sequence_email($type, ['name' => $name]);
     $result = tamrehab_send_resend_email($to, $template['subject'], $template['html']);
