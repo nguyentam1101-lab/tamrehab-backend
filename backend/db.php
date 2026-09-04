@@ -8,9 +8,21 @@ function tamrehab_db(): PDO
         throw new RuntimeException('PDO SQLite driver is missing. Enable pdo_sqlite in PHP or install the php-sqlite3 package.');
     }
 
-    $dbPath = __DIR__ . DIRECTORY_SEPARATOR . 'brain.db';
+    $dbPath = getenv('DATABASE_PATH') ?: ($_ENV['DATABASE_PATH'] ?? null);
+    if (!$dbPath) {
+        if (file_exists('/data') && is_dir('/data')) {
+            $dbPath = '/data/brain.db';
+        } else {
+            $dbPath = __DIR__ . DIRECTORY_SEPARATOR . 'brain.db';
+        }
+    }
+
+    $dir = dirname($dbPath);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
     if (!file_exists($dbPath)) {
-        touch($dbPath);
+        @touch($dbPath);
     }
 
     $pdo = new PDO('sqlite:' . $dbPath);
@@ -71,6 +83,12 @@ function tamrehab_db(): PDO
                 $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . tamrehab_column_sql($table, $column));
             }
         }
+    }
+
+    $productCount = (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn();
+    if ($productCount === 0) {
+        $pdo->exec("INSERT INTO products (id, name, product_type, price, description, stock_quantity) VALUES 
+            (1, 'Buổi giãn cơ trị liệu chuyên sâu', 'service', 350000, 'Liệu trình giãn cơ chuyên sâu 60 phút giúp giảm căng cơ và phục hồi vận động.', NULL)");
     }
 
     return $pdo;

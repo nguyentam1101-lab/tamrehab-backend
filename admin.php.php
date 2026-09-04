@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-$db = new PDO('sqlite:' . __DIR__ . DIRECTORY_SEPARATOR . 'brain.db');
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+require_once __DIR__ . '/backend/db.php';
+$db = tamrehab_db();
 
 function h(?string $value): string
 {
