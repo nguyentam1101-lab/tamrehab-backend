@@ -140,7 +140,7 @@
         panel.innerHTML = `
           <h2>${isEdit ? 'Sửa đơn hàng' : 'Thêm đơn hàng'}</h2>
           <p class="subtitle">Email có +test (ví dụ nguyentam1101+test@gmail.com) sẽ nhận 1 mail xác nhận đơn + đủ 3 mail chăm sóc ngay. Dùng mã đơn mới rồi bấm Lưu.</p>
-          <form id="orderForm" method="post" action="${API_URL}/api/orders.php">
+          <form id="orderForm" action="/admin">
             <input type="hidden" name="action" value="save_order" />
             <input type="hidden" name="id" value="${order.id || ''}" />
             <label>Mã đơn hàng</label>
@@ -260,6 +260,10 @@
     async function refreshTab() {
       const tab = state.tab;
       renderForm(tab);
+      if (tab === 'orders') {
+        const orderForm = document.getElementById('orderForm');
+        if (orderForm) orderForm.addEventListener('submit', submitOrderForm);
+      }
       if (tab === 'products') {
         const items = await loadProducts();
         renderTable(tab, items);
@@ -301,6 +305,27 @@
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || 'Lỗi thao tác');
+    }
+
+    async function submitOrderForm(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const form = event.currentTarget;
+      const data = Object.fromEntries(new FormData(form).entries());
+      try {
+        const response = await fetch(API_URL + '/api/orders.php', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ action: 'save_order', ...data })
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Không thể lưu đơn hàng.');
+        state.editOrder = null;
+        showNotice(result.message || 'Đã lưu đơn hàng.', 'success');
+        await refreshTab();
+      } catch (error) {
+        showNotice(error.message || 'Không kết nối được backend. Đơn chưa được lưu; vui lòng thử lại.', 'error');
+      }
     }
 
     document.addEventListener('click', async event => {
