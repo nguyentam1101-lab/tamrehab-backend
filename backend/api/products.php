@@ -13,8 +13,14 @@ require_once __DIR__ . '/../db.php';
 $pdo = tamrehab_db();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $stmt = $pdo->query('SELECT * FROM products ORDER BY id DESC');
-    echo json_encode(['success' => true, 'items' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    try {
+        $stmt = $pdo->query('SELECT * FROM products ORDER BY id DESC');
+        echo json_encode(['success' => true, 'items' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    } catch (Throwable $error) {
+        error_log('[api/products] Read failed: ' . $error->getMessage());
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Không thể tải danh mục sản phẩm.']);
+    }
     exit;
 }
 
