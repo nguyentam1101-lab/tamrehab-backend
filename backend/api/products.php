@@ -18,7 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input) || $input === []) {
+    $input = $_POST;
+}
 $action = $input['action'] ?? 'save_product';
 
 if ($action === 'save_product') {
