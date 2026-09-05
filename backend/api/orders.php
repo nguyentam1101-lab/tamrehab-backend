@@ -122,15 +122,20 @@ if ($action === 'save_order') {
         $productStmt = $pdo->prepare('SELECT name, product_type FROM products WHERE id = :id LIMIT 1');
         $productStmt->execute([':id' => $productId]);
         $product = $productStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        $response['email_confirmation'] = tamrehab_send_order_confirmation($pdo, [
-            'order_id' => $orderId,
-            'customer_name' => $customerName,
-            'email' => $email,
-            'product_name' => $product['name'] ?? '',
-            'product_type' => $product['product_type'] ?? 'service',
-            'quantity' => $quantity,
-            'amount' => $amount,
-        ]);
+        try {
+            $response['email_confirmation'] = tamrehab_send_order_confirmation($pdo, [
+                'order_id' => $orderId,
+                'customer_name' => $customerName,
+                'email' => $email,
+                'product_name' => $product['name'] ?? '',
+                'product_type' => $product['product_type'] ?? 'service',
+                'quantity' => $quantity,
+                'amount' => $amount,
+            ]);
+        } catch (Throwable $mailError) {
+            error_log('[api/orders] Order confirmation failed: ' . $mailError->getMessage());
+            $response['email_confirmation'] = ['success' => false, 'message' => $mailError->getMessage()];
+        }
         if (!empty($response['email_confirmation']['success'])) {
             $response['message'] = $response['email_confirmation']['message'] ?? 'Đã lưu đơn hàng và gửi email xác nhận.';
         } elseif (!empty($response['email_confirmation']['skipped'])) {
@@ -154,7 +159,12 @@ if ($action === 'send_confirmation') {
         echo json_encode(['success' => false, 'message' => 'Không tìm thấy đơn hàng']);
         exit;
     }
-    $result = tamrehab_send_order_confirmation($pdo, $order);
+    try {
+        $result = tamrehab_send_order_confirmation($pdo, $order);
+    } catch (Throwable $mailError) {
+        error_log('[api/orders] Resend confirmation failed: ' . $mailError->getMessage());
+        $result = ['success' => false, 'message' => $mailError->getMessage()];
+    }
     echo json_encode([
         'success' => !empty($result['success']),
         'email_confirmation' => $result,
