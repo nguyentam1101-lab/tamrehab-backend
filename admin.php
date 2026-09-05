@@ -132,6 +132,8 @@ try {
 
             $db->commit();
             $message = 'Đã lưu đơn hàng.';
+            $emailValid = $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL);
+            error_log('[admin] save_order: email = "' . $email . '" email hợp lệ = ' . ($emailValid ? 'YES' : 'NO'));
             if ($id === 0) {
                 error_log('[admin] save_order: GỌI gửi email xác nhận cho đơn ' . $orderId . ' to=' . ($email === '' ? '(trống)' : $email));
                 try {
@@ -161,6 +163,28 @@ try {
         } elseif ($action === 'delete_order' && $id > 0) {
             $db->prepare('DELETE FROM orders WHERE id = ?')->execute([$id]);
             $message = 'Đã xóa đơn hàng.';
+            $tab = 'orders';
+        } elseif ($action === 'resend_order_email' && $id > 0) {
+            $stmt = $db->prepare('SELECT o.*, p.name AS product_name, p.product_type AS product_type FROM orders o LEFT JOIN products p ON p.id = o.product_id WHERE o.id = ? LIMIT 1');
+            $stmt->execute([$id]);
+            $order = $stmt->fetch();
+            if (!$order) {
+                throw new InvalidArgumentException('Không tìm thấy đơn hàng.');
+            }
+            try {
+                $emailResult = tamrehab_send_order_confirmation($db, $order);
+            } catch (Throwable $mailThrowable) {
+                error_log('[admin] resend_order_email: EMAIL ném exception: ' . $mailThrowable->getMessage());
+                $emailResult = ['success' => false, 'message' => $mailThrowable->getMessage()];
+            }
+            error_log('[admin] resend_order_email: KẾT QUẢ email = ' . json_encode($emailResult, JSON_UNESCAPED_UNICODE));
+            if (!empty($emailResult['success'])) {
+                $message = $emailResult['message'] ?? 'Đã gửi lại email xác nhận.';
+            } elseif (!empty($emailResult['skipped'])) {
+                $message = 'Chưa gửi email vì đơn hàng thiếu địa chỉ email hợp lệ.';
+            } else {
+                $message = 'Gửi email xác nhận thất bại: ' . ($emailResult['message'] ?? '');
+            }
             $tab = 'orders';
         }
     }
@@ -274,7 +298,7 @@ if ($tab === 'orders' && $editId > 0) {
     <?php else: ?>
         <div class="layout">
             <form method="post"><h2><?= $editOrder ? 'Chỉnh sửa đơn hàng' : 'Thêm đơn hàng' ?></h2><input type="hidden" name="action" value="save_order"><input type="hidden" name="tab" value="orders"><input type="hidden" name="id" value="<?= h((string) ($editOrder['id'] ?? 0)) ?>"><label>Mã đơn hàng</label><input name="order_id" value="<?= h($editOrder['order_id'] ?? '') ?>" required><label>Tên khách hàng</label><input name="customer_name" value="<?= h($editOrder['customer_name'] ?? '') ?>"><label>Số điện thoại</label><input name="phone" value="<?= h($editOrder['phone'] ?? '') ?>"><label>Email (để gửi xác nhận)</label><input type="email" name="email" value="<?= h($editOrder['email'] ?? '') ?>"><label>Sản phẩm/dịch vụ</label><select name="product_id" required><option value="">Chọn</option><?php foreach ($products as $product): ?><option value="<?= h((string) $product['id']) ?>" <?= (int) ($editOrder['product_id'] ?? 0) === (int) $product['id'] ? 'selected' : '' ?>><?= h($product['name']) ?> (<?= h($product['product_type']) ?>)</option><?php endforeach; ?></select><label>Số lượng</label><input type="number" name="quantity" value="<?= h((string) ($editOrder['quantity'] ?? 1)) ?>" min="1" required><label>Số tiền</label><input type="number" name="amount" value="<?= h((string) ($editOrder['amount'] ?? '')) ?>" min="0" step="0.01" required><label>Nội dung</label><textarea name="content"><?= h($editOrder['content'] ?? '') ?></textarea><label>Trạng thái</label><select name="status"><option value="pending" <?= ($editOrder['status'] ?? 'pending') === 'pending' ? 'selected' : '' ?>>pending</option><option value="success" <?= ($editOrder['status'] ?? '') === 'success' ? 'selected' : '' ?>>success</option></select><div class="actions"><button class="primary"><?= $editOrder ? 'Lưu thay đổi' : 'Thêm đơn' ?></button><?php if ($editOrder): ?><a href="?tab=orders">Hủy</a><?php endif; ?></div></form>
-            <table><tr><th>Mã đơn</th><th>Sản phẩm</th><th>SL</th><th>Số tiền</th><th>Trạng thái</th><th></th></tr><?php foreach ($orders as $order): ?><tr><td><?= h($order['order_id']) ?><br><small><?= h($order['content']) ?></small></td><td><?= h($order['product_name'] ?: 'Không xác định') ?></td><td><?= h((string) $order['quantity']) ?></td><td><?= number_format((float) $order['amount'], 0, ',', '.') ?></td><td><?= h($order['status']) ?></td><td><a href="?tab=orders&edit=<?= $order['id'] ?>">Sửa</a> <form method="post"><input type="hidden" name="action" value="delete_order"><input type="hidden" name="tab" value="orders"><input type="hidden" name="id" value="<?= h((string) $order['id']) ?>"><button onclick="return confirm('Xóa đơn hàng này?')">Xóa</button></form></td></tr><?php endforeach; ?></table>
+            <table><tr><th>Mã đơn</th><th>Sản phẩm</th><th>SL</th><th>Số tiền</th><th>Trạng thái</th><th>Email</th><th></th></tr><?php foreach ($orders as $order): ?><tr><td><?= h($order['order_id']) ?><br><small><?= h($order['content']) ?></small></td><td><?= h($order['product_name'] ?: 'Không xác định') ?></td><td><?= h((string) $order['quantity']) ?></td><td><?= number_format((float) $order['amount'], 0, ',', '.') ?></td><td><?= h($order['status']) ?></td><td><?= $order['email'] ? h($order['email']) : '<span class="muted">(trống)</span>' ?></td><td><a href="?tab=orders&edit=<?= $order['id'] ?>">Sửa</a> <form method="post" style="display:inline"><input type="hidden" name="action" value="resend_order_email"><input type="hidden" name="tab" value="orders"><input type="hidden" name="id" value="<?= h((string) $order['id']) ?>"><button onclick="return confirm('Gửi lại email xác nhận cho đơn này?')">Gửi email xác nhận</button></form> <form method="post" style="display:inline"><input type="hidden" name="action" value="delete_order"><input type="hidden" name="tab" value="orders"><input type="hidden" name="id" value="<?= h((string) $order['id']) ?>"><button onclick="return confirm('Xóa đơn hàng này?')">Xóa</button></form></td></tr><?php endforeach; ?></table>
         </div>
     <?php endif; ?>
     <script>const type = document.getElementById('product_type'); const stock = document.getElementById('stock_quantity'); function updateStock() { const physical = type && type.value === 'physical'; if (stock) { stock.required = physical; stock.disabled = !physical; if (!physical) stock.value = ''; } } if (type) { type.addEventListener('change', updateStock); updateStock(); }</script>

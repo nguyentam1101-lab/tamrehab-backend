@@ -36,6 +36,8 @@ if ($action === 'save_order') {
     $customerName = trim((string)($input['customer_name'] ?? ''));
     $phone = trim((string)($input['phone'] ?? ''));
     $email = trim((string)($input['email'] ?? ''));
+    $emailValid = $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL);
+    error_log('[api/orders] save_order: order_id=' . $orderId . ' email="' . $email . '" email hợp lệ=' . ($emailValid ? 'YES' : 'NO'));
     $productId = (int)($input['product_id'] ?? 0);
     $quantity = max(1, (int)($input['quantity'] ?? 1));
     $amount = (float)($input['amount'] ?? 0);
@@ -111,6 +113,7 @@ if ($action === 'save_order') {
 
     $response = ['success' => true, 'message' => 'Đã lưu đơn hàng.'];
     $shouldSend = $id === 0 || ($email !== '' && $previousEmail === '');
+    error_log('[api/orders] save_order: should_send=' . ($shouldSend ? 'YES' : 'NO') . ' (id=' . $id . ', email="' . $email . '", prev="' . $previousEmail . '")');
     if ($shouldSend) {
         $productStmt = $pdo->prepare('SELECT name, product_type FROM products WHERE id = :id LIMIT 1');
         $productStmt->execute([':id' => $productId]);

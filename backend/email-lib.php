@@ -194,6 +194,7 @@ function tamrehab_send_order_confirmation(PDO $pdo, array $order): array
     }
 
     $content = tamrehab_order_confirmation_email($order);
+    error_log('[email-lib] Sending order confirmation to: ' . $toEmail);
     $result = tamrehab_send_resend_email($toEmail, $content['subject'], $content['body']);
 
     $customerId = isset($order['customer_id']) ? (int) $order['customer_id'] : null;
