@@ -27,7 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+$input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input) || $input === []) {
+    // JavaScript normally sends JSON. Accept normal form posts as a safe fallback.
+    $input = $_POST;
+}
 $action = $input['action'] ?? 'save_order';
 
 if ($action === 'save_order') {
@@ -44,7 +48,7 @@ if ($action === 'save_order') {
     $content = trim((string)($input['content'] ?? ''));
     $status = trim((string)($input['status'] ?? 'pending'));
 
-    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if ($orderId === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Email không hợp lệ']);
         exit;

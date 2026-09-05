@@ -140,7 +140,7 @@
         panel.innerHTML = `
           <h2>${isEdit ? 'Sửa đơn hàng' : 'Thêm đơn hàng'}</h2>
           <p class="subtitle">Email có +test (ví dụ nguyentam1101+test@gmail.com) sẽ nhận 1 mail xác nhận đơn + đủ 3 mail chăm sóc ngay. Dùng mã đơn mới rồi bấm Lưu.</p>
-          <form id="orderForm">
+          <form id="orderForm" method="post" action="${API_URL}/api/orders.php">
             <input type="hidden" name="action" value="save_order" />
             <input type="hidden" name="id" value="${order.id || ''}" />
             <label>Mã đơn hàng</label>
@@ -400,6 +400,10 @@
         }
         else { showNotice(result.message || 'Lỗi', 'error'); }
       }
+    });
+
+    window.addEventListener('unhandledrejection', () => {
+      showNotice('Không kết nối được backend. Đơn chưa được lưu; vui lòng thử lại.', 'error');
     });
 
     refreshTab();
