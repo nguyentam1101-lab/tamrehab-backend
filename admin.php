@@ -73,8 +73,8 @@ try {
             }
 
             if ($id > 0) {
-                $statement = $db->prepare('UPDATE customers SET name = ?, phone = ?, email = COALESCE(NULLIF(?, ''), email), zalo = ?, registered_at = ? WHERE id = ?');
-                $statement->execute([$name, $phone, $email, $zalo, $registeredAt, $id]);
+                $statement = $db->prepare('UPDATE customers SET name = ?, phone = ?, email = ?, zalo = ?, registered_at = ? WHERE id = ?');
+                $statement->execute([$name, $phone, $email !== '' ? $email : null, $zalo, $registeredAt, $id]);
             } else {
                 $statement = $db->prepare('INSERT INTO customers (name, phone, email, zalo, registered_at) VALUES (?, ?, ?, ?, ?)');
                 $statement->execute([$name, $phone, $email !== '' ? $email : null, $zalo, $registeredAt]);
@@ -133,15 +133,22 @@ try {
             $db->commit();
             $message = 'Đã lưu đơn hàng.';
             if ($id === 0) {
-                $emailResult = tamrehab_send_order_confirmation($db, [
-                    'order_id' => $orderId,
-                    'customer_name' => $customerName,
-                    'email' => $email,
-                    'product_name' => $row['name'] ?? '',
-                    'product_type' => $row['product_type'] ?? 'service',
-                    'quantity' => $quantity,
-                    'amount' => $amount,
-                ]);
+                error_log('[admin] save_order: GỌI gửi email xác nhận cho đơn ' . $orderId . ' to=' . ($email === '' ? '(trống)' : $email));
+                try {
+                    $emailResult = tamrehab_send_order_confirmation($db, [
+                        'order_id' => $orderId,
+                        'customer_name' => $customerName,
+                        'email' => $email,
+                        'product_name' => $row['name'] ?? '',
+                        'product_type' => $row['product_type'] ?? 'service',
+                        'quantity' => $quantity,
+                        'amount' => $amount,
+                    ]);
+                } catch (Throwable $mailThrowable) {
+                    error_log('[admin] save_order: EMAIL ném exception: ' . $mailThrowable->getMessage());
+                    $emailResult = ['success' => false, 'message' => $mailThrowable->getMessage()];
+                }
+                error_log('[admin] save_order: KẾT QUẢ email = ' . json_encode($emailResult, JSON_UNESCAPED_UNICODE));
                 if (!empty($emailResult['success'])) {
                     $message = 'Đã lưu đơn hàng và gửi email xác nhận.';
                 } elseif (!empty($emailResult['skipped'])) {

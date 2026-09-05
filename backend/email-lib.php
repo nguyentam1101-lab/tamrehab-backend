@@ -4,7 +4,9 @@ function tamrehab_log(string $message): void
 {
     $logFile = __DIR__ . '/email_debug.log';
     $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($logFile, '[' . $timestamp . '] ' . $message . PHP_EOL, FILE_APPEND | LOCK_EX);
+    $line = '[' . $timestamp . '] ' . $message;
+    file_put_contents($logFile, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+    error_log('[email-lib] ' . $line);
 }
 
 function tamrehab_email_sequence(): array
@@ -36,12 +38,17 @@ function tamrehab_resend_api_key(): string
     if (is_file($file)) {
         $key = trim((string) file_get_contents($file));
         if ($key !== '') {
+            $masked = substr($key, 0, 8) . '...' . substr($key, -4);
+            tamrehab_log('Resend API key loaded from file (masked: ' . $masked . ')');
             return $key;
         }
     }
 
     if (is_string($envKey) && trim($envKey) !== '') {
-        return trim($envKey);
+        $envKey = trim($envKey);
+        $masked = substr($envKey, 0, 8) . '...' . substr($envKey, -4);
+        tamrehab_log('Resend API key loaded from env RESEND_API_KEY (masked: ' . $masked . ')');
+        return $envKey;
     }
 
     tamrehab_log('Resend API key missing from resend_config.txt and env RESEND_API_KEY');
@@ -50,6 +57,7 @@ function tamrehab_resend_api_key(): string
 
 function tamrehab_send_resend_email(string $toEmail, string $subject, string $body): array
 {
+    tamrehab_log('send_resend_email called: to=' . $toEmail . ' subject=' . $subject);
     $apiKey = tamrehab_resend_api_key();
     if ($apiKey === '') {
         tamrehab_log('Resend send failed: missing API key for ' . $toEmail);
