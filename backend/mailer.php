@@ -120,32 +120,35 @@ function tamrehab_sequence_email(string $type, array $data = []): array
     switch ($type) {
         case 'welcome':
             return [
-                'subject' => 'Chào mừng bạn đến với T.A.M REHAB',
-                'html' => tamrehab_email_wrap('Rất vui được đồng hành cùng bạn',
+                'subject' => 'Chào bạn, T.A.M REHAB xin gửi lời cảm ơn!',
+                'html' => tamrehab_email_wrap('Cảm ơn bạn đã để lại thông tin',
                     "<p>Xin chào {$safeName},</p>"
-                    . '<p>Cảm ơn bạn đã để lại thông tin cho T.A.M REHAB. Cơ thể cần được lắng nghe trước khi bị quá tải — chúng tôi ở đây để hỗ trợ bạn giãn cơ trị liệu chuyên sâu, 1:1.</p>'
-                    . '<p>Nếu bạn đang căng vai gáy, đau lưng hoặc cần phục hồi sau tập luyện, hãy đặt một buổi trải nghiệm khi sẵn sàng.</p>'
-                    . '<p>Thân ái,<br>T.A.M REHAB</p>'
+                    . '<p>Cảm ơn bạn đã tin tưởng và tìm đến T.A.M REHAB — dịch vụ giãn cơ trị liệu chuyên sâu 1:1 tại TP.HCM.</p>'
+                    . '<p>Chúng tôi hiểu cơ thể cần được lắng nghe trước khi bị quá tải. Nếu bạn đang căng vai gáy, đau lưng do ngồi nhiều, hoặc cần phục hồi sau tập luyện — đội ngũ sẽ cùng bạn tìm ra vùng cơ đang bị bó và cách chăm sóc phù hợp.</p>'
+                    . '<p>Khi bạn sẵn sàng, hãy đặt một buổi trải nghiệm. Không bắt buộc thẻ, không phát sinh chi phí gì thêm.</p>'
+                    . '<p>Thân ái,<br>Đội ngũ T.A.M REHAB</p>'
                 ),
             ];
         case 'nurture':
             return [
-                'subject' => 'Vì sao giãn cơ chuyên sâu khác massage thông thường',
-                'html' => tamrehab_email_wrap('Hiểu đúng cơ thể trước khi “cứ xoa là hết”',
+                'subject' => 'Ngồi 6 tiếng rồi? Cơ thể bạn đang kêu cứu đấy!',
+                'html' => tamrehab_email_wrap('Cơ thể không cần thêm một chỗ để đau',
                     "<p>Xin chào {$safeName},</p>"
-                    . '<p>Nhiều người tìm T.A.M REHAB sau khi đã thử massage nhưng cơn đau vẫn quay lại. Giãn cơ trị liệu chuyên sâu tập trung vào điểm nghẽn, biên độ vận động và thói quen ngồi/tập của bạn.</p>'
-                    . '<p>Một buổi 1:1 giúp xác định vùng cần can thiệp, thay vì chỉ làm dịu tạm thời.</p>'
-                    . '<p>Khi bạn sẵn sàng, chúng tôi sẽ sắp lịch phù hợp.</p>'
+                    . '<p>Ngồi nhiều giờ mỗi ngày khiến vai gáy và lưng dần bị bó cứng — nhưng nhiều người chỉ nhận ra khi đã thành cơn đau kéo dài.</p>'
+                    . '<p>Giãn cơ trị liệu chuyên sâu khác massage thông thường ở chỗ: chúng tôi tập trung vào điểm nghẽn, biên độ vận động và thói quen ngồi/tập của riêng bạn — thay vì chỉ làm dịu tạm thời.</p>'
+                    . '<p>Một buổi 1:1 giúp xác định vùng cần can thiệp đúng cách. Khi bạn sẵn sàng, đội ngũ sẽ sắp lịch phù hợp cho bạn.</p>'
+                    . '<p>Thân ái,<br>Đội ngũ T.A.M REHAB</p>'
                 ),
             ];
         case 'close':
             return [
-                'subject' => 'Sẵn sàng đặt buổi trị liệu cùng T.A.M REHAB?',
-                'html' => tamrehab_email_wrap('Chốt một buổi — không cần mua thẻ',
+                'subject' => 'Ưu đãi 600K cho buổi giãn cơ 1:1 – dành riêng cho bạn',
+                'html' => tamrehab_email_wrap('Thử một buổi trước — không cần cam kết gì',
                     "<p>Xin chào {$safeName},</p>"
-                    . '<p>Bạn có thể đặt 1 buổi trải nghiệm, không bắt buộc thẻ tháng. Nếu đang đau mỏi kéo dài, đây là bước nhỏ để kiểm tra cơ thể đang cần gì.</p>'
-                    . '<p>Trả lời email này hoặc đặt lịch trên tamrehab.com — chúng tôi sẽ xác nhận khung giờ.</p>'
-                    . '<p>Hẹn gặp bạn,<br>T.A.M REHAB</p>'
+                    . '<p>Giá trải nghiệm 60 phút 1:1 là <strong>600.000đ</strong>, gồm đánh giá vận động, giãn cơ chuyên sâu và hướng dẫn tự chăm sóc tại nhà. Không membership, không phát sinh chi phí gì thêm.</p>'
+                    . '<p>Nếu bạn đang đau mỏi kéo dài, một buổi đầu là đủ để biết cơ thể cần gì và có phù hợp hay không. Bạn không cần cam kết dài hạn.</p>'
+                    . '<p>Đặt lịch trên tamrehab.com hoặc nhắn Zalo <strong>0902 499 162</strong> — chúng tôi sẽ xác nhận khung giờ cho bạn.</p>'
+                    . '<p>Hẹn gặp bạn,<br>Đội ngũ T.A.M REHAB</p>'
                 ),
             ];
         default:
@@ -173,18 +176,19 @@ function tamrehab_order_confirmation_email(array $order): array
         . '<tr><td style="padding:8px 0;color:#6E5D4F;">Số tiền</td><td style="padding:8px 0;font-weight:700;">' . $amount . ' VNĐ</td></tr>'
         . ($content !== '' ? '<tr><td style="padding:8px 0;color:#6E5D4F;">Ghi chú</td><td style="padding:8px 0;">' . $content . '</td></tr>' : '')
         . '</table>'
+        . '<p><strong>Chúng tôi sẽ gửi xác nhận lịch hẹn qua Zalo trong 15 phút tới.</strong></p>'
         . '<p><strong>Hướng dẫn nhận buổi trị liệu / nhận hàng:</strong></p>'
         . '<ol>'
         . '<li>Giữ email này và mã đơn khi đến buổi hẹn.</li>'
         . '<li>Nếu là dịch vụ tại chỗ: đến đúng giờ đã thống nhất, mặc đồ thoải mái để giãn cơ.</li>'
-        . '<li>Nếu cần dời lịch, trả lời email này hoặc liên hệ hello@tamrehab.com.</li>'
+        . '<li>Nếu cần dời lịch, trả lời email này hoặc liên hệ Zalo 0902 499 162.</li>'
         . '</ol>'
         . '<p>Cảm ơn bạn. Hẹn gặp lại trên bàn trị liệu.</p>'
-        . '<p>Thân ái,<br>T.A.M REHAB</p>'
+        . '<p>Thân ái,<br>Đội ngũ T.A.M REHAB</p>'
     );
 
     return [
-        'subject' => 'T.A.M REHAB – Xác nhận đơn hàng ' . ($order['order_id'] ?? ''),
+        'subject' => 'Đã nhận đơn hàng ' . ($order['order_id'] ?? '') . ' – T.A.M REHAB sẽ xác nhận qua Zalo',
         'html' => $html,
     ];
 }
