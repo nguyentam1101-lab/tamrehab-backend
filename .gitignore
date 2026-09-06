@@ -9,5 +9,8 @@ backend/*.db
 frontend/.cache/
 
 backend/resend_config.txt
+backend/turso_config.txt
+backend/composer.phar
+backend/composer-setup.php
 .env
 .env.*

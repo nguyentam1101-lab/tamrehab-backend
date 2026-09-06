@@ -1,0 +1,62 @@
+{
+    "packages": [
+        {
+            "name": "turso/libsql",
+            "version": "v0.2.5",
+            "version_normalized": "0.2.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tursodatabase/libsql-php.git",
+                "reference": "5d23eef985edb9335093dcca9ac0a6b1b0ce6467"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tursodatabase/libsql-php/zipball/5d23eef985edb9335093dcca9ac0a6b1b0ce6467",
+                "reference": "5d23eef985edb9335093dcca9ac0a6b1b0ce6467",
+                "shasum": ""
+            },
+            "require": {
+                "ext-ffi": "*",
+                "php": ">=8.3"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.64",
+                "phpstan/phpstan": "2.0.x-dev",
+                "phpunit/phpunit": "^11"
+            },
+            "time": "2025-04-02T12:55:17+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "files": [
+                    "src/functions.php"
+                ],
+                "psr-4": {
+                    "Libsql\\": "src/",
+                    "Libsql\\Tests\\": "tests/"
+                },
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Levy A.",
+                    "email": "levyddsa@gmail.com"
+                }
+            ],
+            "description": "libSQL bindings for PHP",
+            "support": {
+                "issues": "https://github.com/tursodatabase/libsql-php/issues",
+                "source": "https://github.com/tursodatabase/libsql-php/tree/v0.2.5"
+            },
+            "install-path": "../turso/libsql"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

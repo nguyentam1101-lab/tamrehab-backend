@@ -1,0 +1,5 @@
+{
+  "require": {
+    "turso/libsql": "^0.2.5"
+  }
+}
