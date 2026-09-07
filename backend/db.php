@@ -193,14 +193,18 @@ function tamrehab_db(): TamrehabPDO|\PDO
     $authToken  = trim((string) ($config['TURSO_AUTH_TOKEN']   ?? getenv('TURSO_AUTH_TOKEN')   ?? ''));
 
     if ($url !== '' && $authToken !== '') {
-        try {
-            require_once __DIR__ . '/vendor/autoload.php';
-            $libDb = new \Libsql\Database(url: $url, authToken: $authToken);
-            $conn  = $libDb->connect();
-            error_log('[db] Connected to Turso');
-            return new TamrehabPDO($conn);
-        } catch (\Throwable $e) {
-            error_log('[db] Turso failed: ' . $e->getMessage() . ' – falling back to SQLite');
+        if (!extension_loaded('ffi')) {
+            error_log('[db] FFI extension not available – skipping Turso, using SQLite fallback');
+        } else {
+            try {
+                require_once __DIR__ . '/vendor/autoload.php';
+                $libDb = new \Libsql\Database(url: $url, authToken: $authToken);
+                $conn  = $libDb->connect();
+                error_log('[db] Connected to Turso');
+                return new TamrehabPDO($conn);
+            } catch (\Throwable $e) {
+                error_log('[db] Turso failed: ' . $e->getMessage() . ' – falling back to SQLite');
+            }
         }
     }
 

@@ -7,6 +7,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable FFI – required by turso/libsql SDK
+# Set preload mode so FFI works in all request contexts, not just CLI
 RUN echo "ffi.enable=true" > /usr/local/etc/php/conf.d/ffi.ini
 
 WORKDIR /var/www/html
@@ -14,4 +15,5 @@ COPY . .
 
 EXPOSE 10000
 
-CMD ["php", "-S", "0.0.0.0:10000", "-t", "/var/www/html"]
+# Pass ffi.enable via -d flag to ensure it takes effect with php -S
+CMD ["php", "-d", "ffi.enable=true", "-S", "0.0.0.0:10000", "-t", "/var/www/html"]
