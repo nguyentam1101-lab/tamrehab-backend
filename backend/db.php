@@ -3,169 +3,125 @@
 declare(strict_types=1);
 
 // ---------------------------------------------------------------------------
-// TursoStatement – PDOStatement-compatible wrapper around Libsql\Statement
+// TamrehabPDO – thin subclass of \Libsql\PDO that fixes query() for remote
+//
+// Problem: \Libsql\PDOStatement::execute() uses columnCount() to decide if a
+// query is a SELECT. On remote Turso connections columnCount() always returns
+// 0 before execution, so every query is treated as a write and rows are never
+// fetched. We fix this by overriding query() and prepare() to always force the
+// SELECT path via a regex check on the SQL string (same logic as the old
+// TursoStatement wrapper, but now using the SDK's own PDOStatement).
 // ---------------------------------------------------------------------------
-class TursoStatement
+class TamrehabPDO extends \Libsql\PDO
 {
-    private ?array $rows = null;
-    private int $affectedRows = 0;
-    private array $boundParams = [];
-
-    public function __construct(
-        private readonly \Libsql\Statement $stmt,
-        private readonly string $sql,
-        private readonly \Libsql\Connection $conn,
-    ) {}
-
-    /** Accepts named (:key) or positional (?) param arrays */
-    public function execute(?array $params = null): bool
+    /**
+     * Execute a query and always return results for SELECT/PRAGMA/WITH.
+     * Falls back to parent for write statements.
+     */
+    public function query(string $query, ?int $fetchMode = null, mixed ...$fetchModeArgs): \PDOStatement|false
     {
-        $params = $params ?? $this->boundParams;
-        $this->stmt->bind($params);
-
-        // Decide SELECT vs write
-        $isSelect = (bool) preg_match('/^\s*(SELECT|PRAGMA|WITH)\s/i', $this->sql);
-        if ($isSelect) {
-            $this->rows = $this->stmt->query()->fetchArray();
-        } else {
-            $this->affectedRows = $this->stmt->execute();
-        }
-        $this->stmt->reset();
-        $this->boundParams = [];
-        return true;
-    }
-
-    public function bindParam(string|int $param, mixed &$value): bool
-    {
-        $this->boundParams[$param] = $value;
-        return true;
-    }
-
-    public function fetch(int $mode = PDO::FETCH_ASSOC): mixed
-    {
-        if (empty($this->rows)) {
+        $stmt = $this->prepare($query);
+        if ($stmt === false) {
             return false;
         }
-        $row = array_shift($this->rows);
-        return $this->mapFetch($row, $mode);
-    }
-
-    public function fetchAll(int $mode = PDO::FETCH_ASSOC): array
-    {
-        $result = array_map(fn($r) => $this->mapFetch($r, $mode), $this->rows ?? []);
-        $this->rows = [];
-        return $result;
-    }
-
-    public function fetchColumn(int $col = 0): mixed
-    {
-        $row = $this->fetch(PDO::FETCH_NUM);
-        return $row[$col] ?? false;
-    }
-
-    public function rowCount(): int
-    {
-        return $this->affectedRows;
-    }
-
-    private function mapFetch(array $row, int $mode): mixed
-    {
-        return match ($mode) {
-            PDO::FETCH_ASSOC, PDO::FETCH_NAMED, PDO::FETCH_DEFAULT => $row,
-            PDO::FETCH_NUM  => array_values($row),
-            PDO::FETCH_BOTH => array_merge($row, array_values($row)),
-            PDO::FETCH_OBJ  => (object) $row,
-            default         => $row,
-        };
-    }
-}
-
-// ---------------------------------------------------------------------------
-// TursoPDO – PDO-compatible wrapper around Libsql\Connection
-// ---------------------------------------------------------------------------
-class TursoPDO
-{
-    private \Libsql\Connection $conn;
-    private ?\Libsql\Transaction $tx = null;
-    private bool $inTx = false;
-
-    public function __construct(\Libsql\Connection $conn)
-    {
-        $this->conn = $conn;
-    }
-
-    public function setAttribute(int $attr, mixed $value): bool
-    {
-        return true; // no-op – Turso handles defaults
-    }
-
-    public function query(string $sql): TursoStatement
-    {
-        $stmt = $this->prepare($sql);
-        $stmt->execute();
+        $stmt->execute([]);
+        if ($fetchMode !== null) {
+            $stmt->setFetchMode($fetchMode, ...$fetchModeArgs);
+        }
         return $stmt;
     }
 
-    public function exec(string $sql): int|false
+    /**
+     * prepare() – returns a \Libsql\PDOStatement but wraps it so that
+     * execute() always takes the SELECT path for SELECT/PRAGMA/WITH queries,
+     * regardless of what columnCount() says on remote connections.
+     */
+    public function prepare(string $query, array $options = []): \PDOStatement|false
     {
-        try {
-            return ($this->inTx ? $this->tx : $this->conn)->execute($sql);
-        } catch (\Throwable $e) {
-            error_log('[TursoPDO::exec] ' . $e->getMessage());
+        /** @var \Libsql\PDOStatement $stmt */
+        $stmt = parent::prepare($query, $options);
+        if ($stmt === false) {
             return false;
         }
-    }
 
-    public function prepare(string $sql): TursoStatement
-    {
-        $raw = ($this->inTx ? $this->tx : $this->conn)->prepare($sql);
-        return new TursoStatement($raw, $sql, $this->conn);
-    }
+        // Patch the statement so it always uses the query (SELECT) path for
+        // SELECT / PRAGMA / WITH, bypassing the broken columnCount() check.
+        $isSelect = (bool) preg_match('/^\s*(SELECT|PRAGMA|WITH)\s/i', $query);
+        if ($isSelect) {
+            // Wrap in our thin shim via anonymous class extension
+            return new class($stmt, $query) extends \Libsql\PDOStatement {
+                private \Libsql\PDOStatement $inner;
+                private string $sql;
 
-    public function beginTransaction(): bool
-    {
-        $this->tx   = $this->conn->transaction();
-        $this->inTx = true;
-        return true;
-    }
+                public function __construct(\Libsql\PDOStatement $inner, string $sql)
+                {
+                    $this->inner = $inner;
+                    $this->sql   = $sql;
+                }
 
-    public function commit(): bool
-    {
-        $this->tx->commit();
-        $this->inTx = false;
-        $this->tx   = null;
-        return true;
-    }
+                public function execute(?array $params = null): bool
+                {
+                    // Access the underlying \Libsql\Statement via reflection
+                    // and call query() directly to force the SELECT path.
+                    $ref  = new \ReflectionObject($this->inner);
+                    $prop = $ref->getProperty('statement');
+                    $prop->setAccessible(true);
+                    /** @var \Libsql\Statement $raw */
+                    $raw = $prop->getValue($this->inner);
 
-    public function rollBack(): bool
-    {
-        $this->tx?->rollback();
-        $this->inTx = false;
-        $this->tx   = null;
-        return true;
-    }
+                    if ($params !== null && count($params) > 0) {
+                        $raw->bind($params);
+                    }
 
-    public function inTransaction(): bool
-    {
-        return $this->inTx;
-    }
+                    $rows = $raw->query()->fetchArray();
 
-    public function lastInsertId(?string $name = null): string|false
-    {
-        return (string) $this->conn->lastInsertId();
+                    $rowsProp = $ref->getProperty('rows');
+                    $rowsProp->setAccessible(true);
+                    $rowsProp->setValue($this->inner, $rows);
+
+                    return true;
+                }
+
+                public function fetch(int $mode = \PDO::FETCH_DEFAULT, ...$args): mixed
+                {
+                    return $this->inner->fetch($mode, ...$args);
+                }
+
+                public function fetchAll(int $mode = \PDO::FETCH_DEFAULT, ...$args): array
+                {
+                    return $this->inner->fetchAll($mode, ...$args);
+                }
+
+                public function fetchColumn(int $column = 0): mixed
+                {
+                    $row = $this->fetch(\PDO::FETCH_NUM);
+                    return $row[$column] ?? false;
+                }
+
+                public function rowCount(): int
+                {
+                    return $this->inner->rowCount();
+                }
+
+                public function setFetchMode(int $mode, mixed ...$args): bool
+                {
+                    return $this->inner->setFetchMode($mode, ...$args);
+                }
+            };
+        }
+
+        return $stmt;
     }
 }
 
 // ---------------------------------------------------------------------------
-// tamrehab_db() – public API (replaces old PDO SQLite version)
+// tamrehab_db() – public API
 //
-// Returns a TursoPDO that is 100% compatible with every ->prepare / ->exec /
-// ->query / ->beginTransaction call already in the codebase.
-// Falls back to native PDO SQLite if Turso credentials are absent.
+// Returns TamrehabPDO (Turso) if credentials are present, otherwise native
+// PDO SQLite as fallback.
 // ---------------------------------------------------------------------------
-function tamrehab_db(): TursoPDO|PDO
+function tamrehab_db(): TamrehabPDO|\PDO
 {
-    // Try Turso first
     $configFile = __DIR__ . '/turso_config.txt';
     $config     = is_file($configFile) ? parse_ini_file($configFile) : [];
     $url        = trim((string) ($config['TURSO_DATABASE_URL'] ?? getenv('TURSO_DATABASE_URL') ?? ''));
@@ -174,28 +130,31 @@ function tamrehab_db(): TursoPDO|PDO
     if ($url !== '' && $authToken !== '') {
         try {
             require_once __DIR__ . '/vendor/autoload.php';
-            $db   = new \Libsql\Database(url: $url, authToken: $authToken);
-            $conn = $db->connect();
-            error_log('[db] Connected to Turso');
-            return new TursoPDO($conn);
+            $db = new TamrehabPDO(
+                options: ['url' => $url],
+                password: $authToken,
+            );
+            error_log('[db] Connected to Turso via TamrehabPDO');
+            return $db;
         } catch (\Throwable $e) {
             error_log('[db] Turso failed: ' . $e->getMessage() . ' – falling back to SQLite');
         }
     }
 
-    // Fallback: local SQLite (same schema-init as before)
+    // Fallback: local SQLite
     $dbPath = __DIR__ . DIRECTORY_SEPARATOR . 'brain.db';
     if (!file_exists($dbPath)) {
         touch($dbPath);
     }
-    $pdo = new PDO('sqlite:' . $dbPath);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo = new \PDO('sqlite:' . $dbPath);
+    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
     _tamrehab_ensure_schema($pdo);
+    error_log('[db] Using local SQLite fallback');
     return $pdo;
 }
 
-function _tamrehab_ensure_schema(PDO $pdo): void
+function _tamrehab_ensure_schema(\PDO $pdo): void
 {
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS products (
@@ -253,7 +212,6 @@ function _tamrehab_ensure_schema(PDO $pdo): void
     );
 }
 
-// Keep old helper name as alias
 function tamrehab_column_sql(string $table, string $column): string
 {
     $map = [
