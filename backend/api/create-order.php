@@ -51,11 +51,12 @@ try {
         $insertCustomer->execute([':name' => $hoTen, ':phone' => $soDienThoai, ':email' => $email ?: null]);
     }
 
-    $stmt = $pdo->prepare('INSERT INTO orders (order_id, customer_name, phone, amount, content, status, created_at) VALUES (:order_id, :customer_name, :phone, :amount, :content, :status, CURRENT_TIMESTAMP)');
+    $stmt = $pdo->prepare('INSERT INTO orders (order_id, customer_name, phone, email, amount, content, status, created_at) VALUES (:order_id, :customer_name, :phone, :email, :amount, :content, :status, CURRENT_TIMESTAMP)');
     $stmt->execute([
         ':order_id' => $orderId,
         ':customer_name' => $hoTen ?: 'Khách hàng',
         ':phone' => $soDienThoai ?: '',
+        ':email' => $email ?: null,
         ':amount' => $amount,
         ':content' => $content,
         ':status' => 'pending'
