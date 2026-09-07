@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/db.php';
+
 function tamrehab_log(string $message): void
 {
     $logFile = __DIR__ . '/email_debug.log';
@@ -185,7 +187,7 @@ function tamrehab_order_confirmation_email(array $order): array
     ];
 }
 
-function tamrehab_send_order_confirmation(PDO $pdo, array $order): array
+function tamrehab_send_order_confirmation(TursoPDO|PDO $pdo, array $order): array
 {
     $toEmail = trim((string) ($order['email'] ?? ''));
     if ($toEmail === '' || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
